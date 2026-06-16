@@ -86,7 +86,7 @@
 <body class="antialiased h-screen flex flex-col">
 
     <!-- APP LAYOUT (SIDEBAR + MAIN CONTENT) -->
-    <!-- Note: class 'hidden' dihapus agar langsung muncul -->
+    <!-- Tidak menggunakan hidden agar langsung tampil ke Dashboard -->
     <div id="app-layout" class="flex-1 flex overflow-hidden bg-slate-50 relative w-full h-full">
         
         <!-- Mobile Header (Visible only on small screens) -->
@@ -167,7 +167,7 @@
                 </div>
             </div>
 
-            <!-- User Info (No Logout) -->
+            <!-- User Info (Tanpa Logout) -->
             <div class="p-4 border-t border-slate-800">
                 <div class="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
                     <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold uppercase text-xs" id="sidebar-avatar">M</div>
@@ -308,7 +308,6 @@
                                         <button onclick="insertFormat('_')" class="w-8 h-8 rounded hover:bg-slate-100 italic font-serif flex items-center justify-center text-slate-700" title="Miring (Italic)">I</button>
                                         <button onclick="insertFormat('~')" class="w-8 h-8 rounded hover:bg-slate-100 line-through flex items-center justify-center text-slate-700" title="Coret (Strikethrough)">S</button>
                                     </div>
-                                    <!-- ID Container Variable Skenario B ditambahkan di sini -->
                                     <div class="flex items-center gap-2 flex-wrap" id="seq-variable-container">
                                         <span class="text-[10px] font-bold text-slate-400 uppercase">Variabel:</span>
                                         <span class="text-xs text-slate-400 italic">Pilih form target terlebih dahulu</span>
@@ -322,11 +321,11 @@
                                         <i class="ph-fill ph-smiley text-2xl"></i>
                                     </button>
                                     <label class="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition">
-                                        <input type="checkbox" class="accent-emerald-500 w-4 h-4">
+                                        <input type="checkbox" class="accent-emerald-500 w-4 h-4" id="seq-stop-paid">
                                         <span class="text-xs font-bold text-slate-600">Berhenti otomatis jika Lunas</span>
                                     </label>
                                 </div>
-                                <button class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition flex items-center justify-center gap-2 text-base">
+                                <button onclick="saveSequenceToServer()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition flex items-center justify-center gap-2 text-base">
                                     <i class="ph-bold ph-floppy-disk text-lg"></i> Simpan Pesan Ini
                                 </button>
                             </div>
@@ -409,7 +408,7 @@
                                     </div>
                                 </div>
                                 <button onclick="saveGlobalSettings()" class="w-full py-3.5 bg-white border-2 border-green-500 text-green-600 hover:bg-green-50 rounded-xl font-bold transition flex items-center justify-center gap-2">
-                                    <i class="ph-bold ph-check-circle text-lg"></i> Simpan URL Master
+                                    <i class="ph-bold ph-check-circle text-lg"></i> Simpan Pengaturan
                                 </button>
                             </div>
                         </div>
@@ -660,7 +659,7 @@
 
                                     <div class="space-y-2 mt-6 border-t border-slate-200 pt-6">
                                         <label class="text-sm font-bold text-slate-700">URL Logo Brand (Opsional)</label>
-                                        <input type="text" id="cfg-logo" value="https://placehold.co/400x100/ffffff/1e3a8a?text=LOGO+BRAND" placeholder="https://domain.com/logo.png" class="w-full px-4 py-3 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" oninput="updateConfig()">
+                                        <input type="text" id="cfg-logo" value="" placeholder="https://domain.com/logo.png" class="w-full px-4 py-3 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" oninput="updateConfig()">
                                     </div>
                                 </div>
 
@@ -929,20 +928,10 @@
     <!-- SEMUA SCRIPT DAN LOGIKA -->
     <script>
         // =========================================================================
-        // URL MASTER DATABASE (HARDCODED - DARI FILE MasterLibrary.gs LU)
-        // Klien lu tidak perlu tahu dan tidak perlu setting URL ini.
+        // STATE GLOBAL & VARIABEL
         // =========================================================================
-        const MASTER_API_URL = "https://script.google.com/macros/s/AKfycbzq_-n5t1NsrUSg9tCL7edTwB3fCZPYUDA-Vbu6J-Wfu9dXSwNu9yFxUeLOewd1bCvVfQ/exec";
-
-        // =========================================================================
-        // STATE APLIKASI BUILDER UTAMA
-        // =========================================================================
-        let currentStep = 1; 
-        let savedForms = JSON.parse(localStorage.getItem('imersfow_forms')) || [];
-        let currentCategoryFilter = 'Semua';
-        
         let globalSettings = JSON.parse(localStorage.getItem('imersfow_global')) || {
-            sheetUrl: '', 
+            clientUrl: '', 
             waGateway: 'wa_me', 
             apiProvider: 'fonnte', 
             apiToken: '', 
@@ -982,23 +971,24 @@
         let formConfig = JSON.parse(JSON.stringify(defaultFormConfig)); 
         let formFields = [];
         let availableTemplates = {};
+        
+        let currentStep = 1; 
+        let savedForms = JSON.parse(localStorage.getItem('imersfow_forms')) || [];
+        let currentCategoryFilter = 'Semua';
+
+        let sequencesData = [
+            { 
+                id: Date.now(), 
+                timeVal: 10, 
+                timeUnit: 'Menit', 
+                msg: 'Halo [Nama Lengkap],\\nTerima kasih sudah order produk kami.\\n\\nTotal tagihan Anda adalah: *[Total_Tagihan]*\\n\\nSilakan balas pesan ini jika sudah transfer ya! 😊' 
+            }
+        ];
+        let activeSeqId = sequencesData[0].id;
 
         // =========================================================================
-        // HELPER FUNCTIONS (HARUS DIDEKLARASIKAN DI ATAS BIAR GAK ERROR)
+        // HELPER: FETCH DENGAN EXPONENTIAL BACKOFF (Anti-Gagal)
         // =========================================================================
-        function getThemeColor() {
-            const ctaBg = formConfig.ctaBg || '#3b82f6';
-            const match = ctaBg.match(/#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}/i);
-            return match ? match[0] : '#3b82f6';
-        }
-
-        function hexToRgb(hex) {
-            let c = hex.substring(1).split('');
-            if(c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
-            c = '0x' + c.join('');
-            return [(c>>16)&255, (c>>8)&255, c&255].join(', ');
-        }
-
         async function fetchWithBackoff(url, options = {}, retries = 3) {
             const delays = [1000, 2000, 4000];
             for (let i = 0; i < retries; i++) {
@@ -1012,501 +1002,6 @@
             }
         }
 
-        // =========================================================================
-        // INIT ENGINE
-        // =========================================================================
-        window.onload = async function() {
-            // LANGSUNG MASUK DASHBOARD (TANPA LOGIN)
-            switchTab('dashboard');
-            loadGlobalSettings();
-            
-            // Render basic UI states
-            toggleTextColorMode('title');
-            toggleTextColorMode('cta_text');
-
-            // TARIK TEMPLATE DARI GOOGLE SHEETS
-            await initTemplateEngine();
-        };
-
-        async function initTemplateEngine() {
-            const grid = document.getElementById('template-grid');
-            grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-500"><i class="ph-bold ph-spinner animate-spin text-3xl mb-3 text-blue-500"></i><p>Sedang memuat template dari server...</p></div>';
-            
-            try {
-                const result = await fetchWithBackoff(MASTER_API_URL + "?action=get_templates");
-                
-                if(result && result.status === 'success') {
-                    availableTemplates = result.data;
-                    
-                    if(Object.keys(availableTemplates).length === 0) {
-                        showTemplateError("Belum ada template di Database Master. Silakan tambahkan via Template Factory.");
-                    } else {
-                        renderCategorySidebar();
-                        filterTemplates('Semua');
-                    }
-                } else {
-                    showTemplateError("Server merespon dengan error atau data tidak valid.");
-                }
-            } catch (error) {
-                console.warn("Fetch Gagal. Detail:", error.message);
-                showTemplateError("Gagal mengambil data dari Server! Pastikan URL Master benar dan Deploy akses 'Siapa Saja' (Anyone).");
-            }
-        }
-
-        // ANTI-INSPECT SECURITY
-        document.addEventListener('contextmenu', event => event.preventDefault()); 
-        document.onkeydown = function(e) {
-            if(e.keyCode == 123) return false; 
-            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false; 
-            if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) return false; 
-            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false; 
-            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; 
-        };
-
-        // SIDEBAR TOGGLE LOGIC (MOBILE)
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('opacity-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
-            }
-        }
-
-        // =========================================================================
-        // SINKRONISASI DATA DARI GOOGLE SHEETS
-        // =========================================================================
-        async function syncDashboardData() {
-            const btn = document.getElementById('btn-sync');
-            const icon = document.getElementById('icon-sync');
-            
-            if (!globalSettings.sheetUrl || !globalSettings.sheetUrl.startsWith('http')) {
-                showToast('URL Google Sheets belum diatur! Buka menu Integrasi API.');
-                return;
-            }
-
-            btn.disabled = true;
-            icon.classList.add('animate-spin');
-            showToast('Menyinkronkan data dengan database...');
-
-            try {
-                const response = await fetch(globalSettings.sheetUrl + "?action=sync_leads");
-                const result = await response.json();
-                
-                if (result && result.status === 'success' && result.data) {
-                    savedForms.forEach(f => {
-                        if (result.data[f.title] !== undefined) {
-                            f.leads = parseInt(result.data[f.title]) || 0;
-                        }
-                    });
-                    localStorage.setItem('imersfow_forms', JSON.stringify(savedForms));
-                    renderDashboard();
-                    showToast('Sinkronisasi berhasil! Data terbaru ditampilkan.');
-                } else {
-                    throw new Error("Format data tidak sesuai");
-                }
-            } catch (error) {
-                console.error('Sync Error:', error);
-                showToast('Gagal sinkron. Pastikan script Cangkang di Google Sheets sudah diupdate.');
-            } finally {
-                btn.disabled = false;
-                icon.classList.remove('animate-spin');
-            }
-        }
-
-        // =========================================================================
-        // STATE & LOGIC UNTUK MENU SEQUENCE WA
-        // =========================================================================
-        let sequencesData = [
-            { 
-                id: Date.now(), 
-                timeVal: 10, 
-                timeUnit: 'Menit', 
-                msg: 'Halo [Nama Lengkap],\nTerima kasih sudah order produk kami.\n\nTotal tagihan Anda adalah: *[Total_Tagihan]*\n\nSilakan balas pesan ini jika sudah transfer ya! 😊' 
-            }
-        ];
-        let activeSeqId = sequencesData[0].id;
-
-        function renderSequenceViews() {
-            const selectTarget = document.getElementById('seq-form-target');
-            if (!selectTarget) return;
-
-            const currentSelection = selectTarget.value;
-
-            selectTarget.innerHTML = '<option value="">-- Pilih Form yang Ingin Diatur --</option>';
-            savedForms.forEach(f => {
-                selectTarget.innerHTML += `<option value="${f.id}">${f.title}</option>`;
-            });
-
-            if (currentSelection && savedForms.find(f => f.id === currentSelection)) {
-                selectTarget.value = currentSelection;
-            } else if (savedForms.length > 0) {
-                selectTarget.value = savedForms[0].id;
-            }
-
-            renderSequenceVariables();
-        }
-
-        function renderSequenceVariables() {
-            const formId = document.getElementById('seq-form-target').value;
-            const container = document.getElementById('seq-variable-container');
-            
-            let html = `<span class="text-[10px] font-bold text-slate-400 uppercase">Variabel:</span>`;
-            
-            if (!formId) {
-                container.innerHTML = html + `<span class="text-xs text-slate-400 italic">Pilih form target terlebih dahulu</span>`;
-                return;
-            }
-
-            const form = savedForms.find(f => f.id === formId);
-            if (!form || !form.fields) {
-                container.innerHTML = html + `<span class="text-xs text-slate-400 italic">Form tidak memiliki data field yang valid</span>`;
-                return;
-            }
-
-            const colors = ['blue', 'emerald', 'amber', 'purple', 'rose', 'teal'];
-            form.fields.forEach((f, idx) => {
-                const c = colors[idx % colors.length];
-                html += `<button onclick="insertVar('[${f.label}]')" class="text-xs bg-${c}-50 text-${c}-600 hover:bg-${c}-100 font-bold px-2.5 py-1.5 rounded-lg border border-${c}-100 transition max-w-[150px] truncate" title="[${f.label}]">[${f.label}]</button>`;
-            });
-
-            if (form.hasCalc) {
-                html += `<button onclick="insertVar('[Total_Tagihan]')" class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold px-2.5 py-1.5 rounded-lg border border-slate-300 transition shadow-sm">[Total_Tagihan]</button>`;
-            }
-
-            container.innerHTML = html;
-            updateSeqPreview();
-        }
-
-        function renderTimeline() {
-            const container = document.getElementById('sequence-timeline');
-            container.innerHTML = '';
-            
-            sequencesData.forEach((seq, index) => {
-                const isActive = seq.id === activeSeqId;
-                const borderClass = isActive ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-200 hover:bg-slate-50';
-                const numBgClass = isActive ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500';
-                const titleClass = isActive ? 'text-emerald-800' : 'text-slate-700';
-
-                let previewText = seq.msg.replace(/\n/g, ' ');
-                if(!previewText.trim()) previewText = 'Pesan kosong...';
-
-                container.innerHTML += `
-                    <div onclick="selectSequence(${seq.id})" class="flex items-center gap-3 p-3 rounded-xl border ${borderClass} cursor-pointer transition animate-fade-in relative group">
-                        <div class="w-8 h-8 rounded-full ${numBgClass} flex items-center justify-center font-bold text-xs flex-shrink-0">${index + 1}</div>
-                        <div class="flex-1 overflow-hidden">
-                            <p class="text-sm font-bold ${titleClass}">Kirim: ${seq.timeVal} ${seq.timeUnit} Setelah Order</p>
-                            <p class="text-xs text-slate-500 truncate">${previewText}</p>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function selectSequence(id) {
-            activeSeqId = id;
-            const seq = sequencesData.find(s => s.id === id);
-            if(seq) {
-                document.getElementById('seq-time-val').value = seq.timeVal;
-                document.getElementById('seq-time-unit').value = seq.timeUnit;
-                document.getElementById('seq-editor').value = seq.msg;
-                
-                updateSeqPreview();
-                renderTimeline(); 
-            }
-        }
-
-        function addSequenceItem() {
-            const newSeq = {
-                id: Date.now(),
-                timeVal: 1,
-                timeUnit: 'Hari',
-                msg: 'Halo, ini pesan follow-up otomatis...'
-            };
-            sequencesData.push(newSeq);
-            selectSequence(newSeq.id);
-            showToast('Jadwal baru ditambahkan!');
-        }
-
-        function updateSequenceData() {
-            const seq = sequencesData.find(s => s.id === activeSeqId);
-            if(seq) {
-                seq.timeVal = document.getElementById('seq-time-val').value;
-                seq.timeUnit = document.getElementById('seq-time-unit').value;
-                seq.msg = document.getElementById('seq-editor').value;
-                
-                renderTimeline(); 
-                updateSeqPreview(); 
-            }
-        }
-
-        function deleteActiveSequence() {
-            if(sequencesData.length <= 1) {
-                showToast('Minimal harus ada 1 pesan sequence!');
-                return;
-            }
-            if(confirm('Hapus jadwal pesan ini?')) {
-                sequencesData = sequencesData.filter(s => s.id !== activeSeqId);
-                selectSequence(sequencesData[0].id); 
-                showToast('Jadwal berhasil dihapus!');
-            }
-        }
-
-        function insertFormat(char) {
-            const textarea = document.getElementById('seq-editor');
-            const start = textarea.selectionStart; 
-            const end = textarea.selectionEnd;
-            const text = textarea.value;
-            
-            if (start !== end) {
-                const selected = text.substring(start, end);
-                textarea.value = text.substring(0, start) + char + selected + char + text.substring(end);
-                textarea.selectionStart = start;
-                textarea.selectionEnd = end + 2;
-            } else {
-                textarea.value = text.substring(0, start) + char + char + text.substring(end);
-                textarea.selectionStart = textarea.selectionEnd = start + 1;
-            }
-            
-            textarea.focus(); 
-            updateSequenceData();
-        }
-
-        function insertVar(varString) {
-            const textarea = document.getElementById('seq-editor');
-            const start = textarea.selectionStart;
-            const text = textarea.value;
-            
-            textarea.value = text.substring(0, start) + varString + text.substring(start);
-            textarea.selectionStart = textarea.selectionEnd = start + varString.length;
-            textarea.focus();
-            updateSequenceData(); 
-        }
-
-        function updateSeqPreview() {
-            let text = document.getElementById('seq-editor').value;
-            
-            if(!text.trim()) {
-                document.getElementById('seq-preview-bubble').innerHTML = "<span class='text-slate-400 italic'>Ketik pesan di editor untuk melihat *Preview* di sini...</span>";
-                return;
-            }
-
-            text = text.replace(/\n/g, '<br>');
-            text = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            text = text.replace(/\*([^\*]+)\*/g, "<b>$1</b>");
-            text = text.replace(/_([^_]+)_/g, "<i>$1</i>");
-            text = text.replace(/~([^~]+)~/g, "<s>$1</s>");
-            
-            text = text.replace(/\[(.*?)\]/g, '<span class="bg-blue-100 text-blue-800 px-1 rounded text-xs font-bold whitespace-nowrap overflow-hidden inline-block align-bottom max-w-[150px] text-ellipsis">Data $1</span>');
-            
-            document.getElementById('seq-preview-bubble').innerHTML = text;
-        }
-
-        function renderCategorySidebar() {
-            const sidebar = document.getElementById('category-sidebar');
-            let uniqueCategories = new Set();
-            for (const key in availableTemplates) {
-                if (availableTemplates[key].category) {
-                    uniqueCategories.add(availableTemplates[key].category);
-                }
-            }
-            
-            let html = `<p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-3">Kategori</p>`;
-            html += `<button onclick="filterTemplates('Semua')" id="btn-cat-Semua" class="cat-btn text-left px-4 py-2.5 rounded-xl bg-blue-100 text-blue-700 font-bold text-sm transition w-full">Semua Template</button>`;
-            
-            uniqueCategories.forEach(cat => {
-                const safeId = cat.replace(/[^a-zA-Z0-9]/g, '-');
-                html += `<button onclick="filterTemplates('${cat}')" id="btn-cat-${safeId}" class="cat-btn text-left px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-200 font-medium text-sm transition w-full">${cat}</button>`;
-            });
-            sidebar.innerHTML = html;
-        }
-
-        function showTemplateError(message) {
-            const grid = document.getElementById('template-grid');
-            grid.innerHTML = `
-                <div onclick="useTemplate('blank')" class="border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition min-h-[220px]">
-                    <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-4">
-                        <i class="ph-bold ph-plus text-3xl"></i>
-                    </div>
-                    <h3 class="font-bold text-slate-800 text-lg">Mulai dari Nol</h3>
-                    <p class="text-xs text-slate-500 mt-2">Buat form kosong sesuai imajinasi Anda.</p>
-                </div>
-                <div class="col-span-1 md:col-span-2 p-6 text-center text-rose-600 font-medium bg-rose-50 rounded-2xl border border-rose-200">
-                    <i class="ph-fill ph-warning-circle text-4xl mb-3"></i>
-                    <p class="font-bold">Gagal Membaca Template!</p>
-                    <p class="text-sm mt-1 text-rose-500">Diagnosa: ${message}</p>
-                </div>
-            `;
-        }
-
-        function renderTemplateCards(categoryFilter) {
-            const grid = document.getElementById('template-grid');
-            let html = `
-                <div onclick="useTemplate('blank')" class="border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition group min-h-[220px]">
-                    <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-4 group-hover:bg-blue-100 group-hover:text-blue-500 transition">
-                        <i class="ph-bold ph-plus text-3xl"></i>
-                    </div>
-                    <h3 class="font-bold text-slate-800 text-lg">Mulai dari Nol</h3>
-                    <p class="text-xs text-slate-500 mt-2">Buat form kosong sesuai imajinasi Anda.</p>
-                </div>
-            `; 
-            
-            for (const key in availableTemplates) {
-                const tpl = availableTemplates[key];
-                if (categoryFilter === 'Semua' || tpl.category === categoryFilter) {
-                    html += `
-                    <div onclick="useTemplate('${key}')" class="border border-slate-200 rounded-2xl p-6 flex flex-col cursor-pointer hover:border-${tpl.color.split('-')[1]}-500 hover:shadow-lg transition bg-white group min-h-[220px] relative overflow-hidden">
-                        <div class="w-14 h-14 rounded-xl ${tpl.bg} ${tpl.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <i class="ph-fill ${tpl.icon} text-3xl"></i>
-                        </div>
-                        <h3 class="font-bold text-slate-800 text-lg mb-1">${tpl.name}</h3>
-                        <p class="text-xs text-slate-500 mb-4 line-clamp-2">Kategori: <b>${tpl.category || 'Lainnya'}</b>.</p>
-                        <div class="mt-auto flex items-center justify-between">
-                            <span class="text-xs font-semibold text-slate-400">${tpl.fields.length} Field Data</span>
-                            <div class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition">
-                                <i class="ph-bold ph-arrow-right"></i>
-                            </div>
-                        </div>
-                    </div>`;
-                }
-            }
-            grid.innerHTML = html;
-        }
-
-        function filterTemplates(category) {
-            currentCategoryFilter = category;
-            
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-100', 'text-blue-700', 'font-bold');
-                btn.classList.add('text-slate-600', 'hover:bg-slate-200', 'font-medium');
-            });
-            
-            const safeId = category.replace(/[^a-zA-Z0-9]/g, '-');
-            const activeBtn = document.getElementById('btn-cat-' + safeId);
-            
-            if (activeBtn) {
-                activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-200', 'font-medium');
-                activeBtn.classList.add('bg-blue-100', 'text-blue-700', 'font-bold');
-            }
-            
-            renderTemplateCards(category);
-        }
-
-        function openTemplateModal() { 
-            document.getElementById('template-modal').classList.add('show'); 
-        }
-        
-        function closeTemplateModal() { 
-            document.getElementById('template-modal').classList.remove('show'); 
-        }
-
-        function useTemplate(key) {
-            closeTemplateModal();
-            
-            if(key === 'blank') {
-                formConfig = JSON.parse(JSON.stringify(defaultFormConfig));
-                formFields = JSON.parse(JSON.stringify(defaultFormFields));
-                document.querySelector('input[name="header_type"][value="solid"]').checked = true;
-                document.querySelector('input[name="cta_type"][value="solid"]').checked = true;
-            } else {
-                const tpl = availableTemplates[key];
-                formConfig = JSON.parse(JSON.stringify(tpl.config));
-                formFields = JSON.parse(JSON.stringify(tpl.fields));
-                document.querySelector('input[name="header_type"][value="gradient"]').checked = true;
-                document.querySelector('input[name="cta_type"][value="gradient"]').checked = true;
-            }
-
-            formConfig.titleColorType = formConfig.titleColorType || 'solid';
-            formConfig.titleColor1 = formConfig.titleColor1 || '#ffffff';
-            formConfig.titleColor2 = formConfig.titleColor2 || '#fef08a';
-            formConfig.ctaTextColorType = formConfig.ctaTextColorType || 'solid';
-            formConfig.ctaTextColor1 = formConfig.ctaTextColor1 || '#ffffff';
-            formConfig.ctaTextColor2 = formConfig.ctaTextColor2 || '#fef08a';
-            
-            formConfig.enablePixel = formConfig.enablePixel || false;
-            formConfig.fbPixel = formConfig.fbPixel || '';
-            formConfig.tiktokPixel = formConfig.tiktokPixel || '';
-            formConfig.googlePixel = formConfig.googlePixel || '';
-
-            document.getElementById('cfg-title').value = formConfig.title; 
-            document.getElementById('cfg-wa').value = formConfig.waNumber;
-            document.getElementById('cfg-wa-intro').value = formConfig.waIntro; 
-            document.getElementById('cfg-wa-footer').value = formConfig.waFooter;
-            document.getElementById('cfg-btn-text').value = formConfig.btnText; 
-            document.getElementById('cfg-logo').value = formConfig.logoUrl;
-            
-            document.querySelector(`input[name="displayMode"][value="${formConfig.displayMode}"]`).checked = true;
-            
-            document.getElementById('cfg-trust-toggle').checked = formConfig.trustBadge; 
-            document.getElementById('cfg-trust-title').value = formConfig.trustTitle; 
-            document.getElementById('cfg-trust-desc').value = formConfig.trustDesc;
-            
-            document.querySelector(`input[name="title_color_type"][value="${formConfig.titleColorType}"]`).checked = true;
-            document.querySelector(`input[name="cta_text_type"][value="${formConfig.ctaTextColorType}"]`).checked = true;
-            
-            document.getElementById('cfg-pixel-toggle').checked = formConfig.enablePixel;
-            document.getElementById('cfg-pixel-fb').value = formConfig.fbPixel;
-            document.getElementById('cfg-pixel-tt').value = formConfig.tiktokPixel;
-            document.getElementById('cfg-pixel-gg').value = formConfig.googlePixel;
-
-            toggleColorMode('header'); 
-            toggleColorMode('cta'); 
-            toggleTextColorMode('title');
-            toggleTextColorMode('cta_text');
-
-            updateConfig();
-            switchTab('builder'); 
-            goToStep(1);
-        }
-
-        function switchTab(viewId) {
-            const views = ['dashboard', 'builder', 'sequence', 'settings', 'tutorial'];
-            
-            views.forEach(v => {
-                document.getElementById('view-' + v).classList.add('hidden');
-                const navBtn = document.getElementById('nav-' + v);
-                if(navBtn) {
-                    navBtn.classList.remove('bg-slate-800', 'text-white');
-                    navBtn.classList.add('text-slate-300');
-                }
-            });
-            
-            document.getElementById('view-' + viewId).classList.remove('hidden');
-            const activeBtn = document.getElementById('nav-' + viewId);
-            if(activeBtn) {
-                activeBtn.classList.remove('text-slate-300');
-                activeBtn.classList.add('bg-slate-800', 'text-white');
-            }
-
-            if(window.innerWidth < 768) {
-                const sidebar = document.getElementById('sidebar');
-                if(sidebar && !sidebar.classList.contains('-translate-x-full')) {
-                    toggleSidebar();
-                }
-            }
-            
-            if(viewId === 'dashboard') {
-                renderDashboard();
-            }
-            if(viewId === 'settings') {
-                loadGlobalSettings();
-            }
-            if(viewId === 'sequence') {
-                if (typeof renderSequenceViews === 'function') {
-                    renderSequenceViews();
-                } else {
-                    renderTimeline();
-                    updateSeqPreview();
-                }
-            }
-        }
-
         function showToast(msg) {
             const toast = document.getElementById('toast'); 
             document.getElementById('toast-msg').innerText = msg;
@@ -1514,155 +1009,20 @@
             setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
 
-        function renderDashboard() {
-            document.getElementById('stat-total-forms').innerText = savedForms.length;
-            
-            let totalLeads = 0; 
-            savedForms.forEach(f => { totalLeads += (f.leads || 0); });
-            document.getElementById('stat-total-leads').innerText = totalLeads.toLocaleString();
-            
-            let conversionRateStr = "0.0%";
-            if(totalLeads > 0) {
-                let simulatedViews = totalLeads * (Math.floor(Math.random() * 5) + 3); 
-                let calcConv = (totalLeads / simulatedViews) * 100;
-                conversionRateStr = calcConv.toFixed(1) + "%";
-            }
-            document.getElementById('stat-conversion-rate').innerText = conversionRateStr;
-            
-            const tbody = document.getElementById('dashboard-table-body'); 
-            tbody.innerHTML = '';
-            
-            if(savedForms.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500 font-medium">Belum ada form yang tersimpan. Ayo buat form pertama Anda!</td></tr>`; 
-                return;
-            }
-            
-            savedForms.forEach(form => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
-                        <td class="px-6 py-4 font-bold text-slate-900">${form.title}</td>
-                        <td class="px-6 py-4 text-slate-500 text-sm">${form.date}</td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold inline-block">Aktif</span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold text-sm border border-blue-100">
-                                <i class="ph-fill ph-users"></i> ${form.leads || 0}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <button onclick="deleteForm('${form.id}')" class="text-rose-600 hover:text-white font-bold bg-rose-50 hover:bg-rose-500 px-3 py-1.5 rounded-lg transition text-xs">Hapus</button>
-                        </td>
-                    </tr>`;
-            });
+        // =========================================================================
+        // COLOR HELPERS
+        // =========================================================================
+        function getThemeColor() {
+            const ctaBg = formConfig.ctaBg || '#3b82f6';
+            const match = ctaBg.match(/#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}/i);
+            return match ? match[0] : '#3b82f6';
         }
 
-        function saveFormToDashboard() {
-            let hasCalculation = formFields.some(f => /=\s*(\d+)/.test(f.options));
-            const newForm = { 
-                id: 'frm_' + Date.now(), 
-                title: formConfig.title, 
-                date: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' }), 
-                leads: 0, 
-                fields: JSON.parse(JSON.stringify(formFields)), 
-                config: JSON.parse(JSON.stringify(formConfig)),
-                hasCalc: hasCalculation
-            };
-            
-            savedForms.unshift(newForm); 
-            localStorage.setItem('imersfow_forms', JSON.stringify(savedForms));
-            showToast('Form berhasil disimpan & dipublish!');
-            setTimeout(() => { switchTab('dashboard'); }, 1500);
-        }
-
-        function deleteForm(id) {
-            if(confirm('Yakin ingin menghapus form ini?')) { 
-                savedForms = savedForms.filter(f => f.id !== id); 
-                localStorage.setItem('imersfow_forms', JSON.stringify(savedForms)); 
-                renderDashboard(); 
-                showToast('Form berhasil dihapus!'); 
-            }
-        }
-
-        function loadGlobalSettings() {
-            document.getElementById('global-sheet-url').value = globalSettings.sheetUrl || '';
-            const waRadios = document.getElementsByName('wa_gateway');
-            for(let i = 0; i < waRadios.length; i++) { 
-                if(waRadios[i].value === globalSettings.waGateway) waRadios[i].checked = true; 
-            }
-            
-            document.getElementById('api-provider').value = globalSettings.apiProvider || 'fonnte';
-            document.getElementById('api-token').value = globalSettings.apiToken || '';
-            document.getElementById('api-sender').value = globalSettings.apiSender || '';
-            toggleWaSettings(); 
-        }
-
-        function toggleWaSettings() {
-            const isApi = document.querySelector('input[name="wa_gateway"]:checked').value === 'api';
-            const apiBox = document.getElementById('api-settings-box');
-            if(isApi) apiBox.classList.remove('hidden'); 
-            else apiBox.classList.add('hidden');
-        }
-
-        function saveGlobalSettings() {
-            globalSettings.sheetUrl = document.getElementById('global-sheet-url').value; 
-            globalSettings.waGateway = document.querySelector('input[name="wa_gateway"]:checked').value;
-            globalSettings.apiProvider = document.getElementById('api-provider').value; 
-            globalSettings.apiToken = document.getElementById('api-token').value; 
-            globalSettings.apiSender = document.getElementById('api-sender').value;
-            
-            localStorage.setItem('imersfow_global', JSON.stringify(globalSettings));
-            
-            if(globalSettings.sheetUrl && globalSettings.sheetUrl.startsWith('http')) {
-                showToast('Menyinkronkan pengaturan ke Google Sheets...');
-                fetch(globalSettings.sheetUrl, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({ 
-                        action: "save_config", 
-                        waGateway: globalSettings.waGateway, 
-                        apiProvider: globalSettings.apiProvider, 
-                        apiToken: globalSettings.apiToken, 
-                        apiSender: globalSettings.apiSender 
-                    }) 
-                }).then(() => { setTimeout(() => { showToast('Konfigurasi WA disinkronkan!'); }, 1000); });
-            } else { 
-                showToast('Pengaturan lokal disimpan. Wajib isi URL Web App agar aktif!'); 
-            }
-        }
-
-        function goToStep(step) {
-            currentStep = step; 
-            document.getElementById('progress-bar').style.width = ((step - 1) / 3) * 100 + '%';
-            
-            document.querySelectorAll('.step-btn').forEach(btn => {
-                const s = parseInt(btn.getAttribute('data-step')); 
-                const circle = btn.querySelector('.step-circle');
-                
-                if (s <= step) { 
-                    circle.classList.add('bg-rose-500', 'text-white', 'border-rose-500'); 
-                    circle.classList.remove('bg-white', 'text-slate-400', 'border-slate-300'); 
-                } else { 
-                    circle.classList.remove('bg-rose-500', 'text-white', 'border-rose-500'); 
-                    circle.classList.add('bg-white', 'text-slate-400', 'border-slate-300'); 
-                }
-            });
-            
-            for (let i = 1; i <= 4; i++) {
-                const el = document.getElementById('step-' + i);
-                if (i === step) { 
-                    el.style.transform = 'translateX(0)'; el.style.opacity = '1'; el.style.pointerEvents = 'auto'; el.style.zIndex = '10'; 
-                } else if (i < step) { 
-                    el.style.transform = 'translateX(-100%)'; el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.zIndex = '0'; 
-                } else { 
-                    el.style.transform = 'translateX(100%)'; el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.zIndex = '0'; 
-                }
-            }
-            
-            if(step === 2) renderCanvas(); 
-            if(step === 3) renderPreview(); 
-            if(step === 4) generateCode();
+        function hexToRgb(hex) {
+            let c = hex.substring(1).split('');
+            if(c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+            c = '0x' + c.join('');
+            return [(c>>16)&255, (c>>8)&255, c&255].join(', ');
         }
 
         function toggleColorMode(target) {
@@ -1751,9 +1111,11 @@
 
             const trustInputs = document.getElementById('trust-inputs');
             if(formConfig.trustBadge) { 
-                trustInputs.style.opacity = '1'; trustInputs.style.pointerEvents = 'auto'; 
+                trustInputs.style.opacity = '1'; 
+                trustInputs.style.pointerEvents = 'auto'; 
             } else { 
-                trustInputs.style.opacity = '0.5'; trustInputs.style.pointerEvents = 'none'; 
+                trustInputs.style.opacity = '0.5'; 
+                trustInputs.style.pointerEvents = 'none'; 
             }
             
             formConfig.enablePixel = document.getElementById('cfg-pixel-toggle').checked;
@@ -1762,13 +1124,740 @@
             formConfig.googlePixel = document.getElementById('cfg-pixel-gg').value;
 
             const pixelInputs = document.getElementById('pixel-inputs');
-            if(formConfig.enablePixel) pixelInputs.classList.remove('hidden');
-            else pixelInputs.classList.add('hidden');
+            if(formConfig.enablePixel) {
+                pixelInputs.classList.remove('hidden');
+            } else {
+                pixelInputs.classList.add('hidden');
+            }
             
             if(currentStep === 1) renderCanvas();
         }
 
-        function generateId() { return 'f_' + Math.random().toString(36).substr(2, 6); }
+        // =========================================================================
+        // UI TOGGLES
+        // =========================================================================
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        function switchTab(viewId) {
+            const views = ['dashboard', 'builder', 'sequence', 'settings', 'tutorial'];
+            
+            views.forEach(v => {
+                const el = document.getElementById('view-' + v);
+                if(el) el.classList.add('hidden');
+
+                const navBtn = document.getElementById('nav-' + v);
+                if(navBtn) {
+                    navBtn.classList.remove('bg-slate-800', 'text-white');
+                    navBtn.classList.add('text-slate-300');
+                }
+            });
+            
+            const targetEl = document.getElementById('view-' + viewId);
+            if(targetEl) targetEl.classList.remove('hidden');
+
+            const activeBtn = document.getElementById('nav-' + viewId);
+            if(activeBtn) {
+                activeBtn.classList.remove('text-slate-300');
+                activeBtn.classList.add('bg-slate-800', 'text-white');
+            }
+
+            if(window.innerWidth < 768) {
+                const sidebar = document.getElementById('sidebar');
+                if(sidebar && !sidebar.classList.contains('-translate-x-full')) {
+                    toggleSidebar();
+                }
+            }
+            
+            if(viewId === 'dashboard') renderDashboard();
+            if(viewId === 'settings') loadGlobalSettings();
+            if(viewId === 'sequence') {
+                if (typeof renderSequenceViews === 'function') {
+                    renderSequenceViews();
+                } else {
+                    renderTimeline();
+                    updateSeqPreview();
+                }
+            }
+        }
+
+        function openTemplateModal() { 
+            document.getElementById('template-modal').classList.add('show'); 
+        }
+        
+        function closeTemplateModal() { 
+            document.getElementById('template-modal').classList.remove('show'); 
+        }
+
+        // =========================================================================
+        // SETTINGS LOGIC
+        // =========================================================================
+        function loadGlobalSettings() {
+            document.getElementById('global-sheet-url').value = globalSettings.clientUrl || '';
+            
+            const waRadios = document.getElementsByName('wa_gateway');
+            for(let i = 0; i < waRadios.length; i++) { 
+                if(waRadios[i].value === globalSettings.waGateway) {
+                    waRadios[i].checked = true; 
+                }
+            }
+            
+            document.getElementById('api-provider').value = globalSettings.apiProvider || 'fonnte';
+            document.getElementById('api-token').value = globalSettings.apiToken || '';
+            document.getElementById('api-sender').value = globalSettings.apiSender || '';
+            
+            toggleWaSettings(); 
+        }
+
+        function toggleWaSettings() {
+            const checkedRadio = document.querySelector('input[name="wa_gateway"]:checked');
+            const isApi = checkedRadio && checkedRadio.value === 'api';
+            const apiBox = document.getElementById('api-settings-box');
+            
+            if(isApi) {
+                apiBox.classList.remove('hidden'); 
+            } else {
+                apiBox.classList.add('hidden');
+            }
+        }
+
+        function saveGlobalSettings() {
+            globalSettings.clientUrl = document.getElementById('global-sheet-url').value; 
+            
+            const checkedRadio = document.querySelector('input[name="wa_gateway"]:checked');
+            globalSettings.waGateway = checkedRadio ? checkedRadio.value : 'wa_me';
+            
+            globalSettings.apiProvider = document.getElementById('api-provider').value; 
+            globalSettings.apiToken = document.getElementById('api-token').value; 
+            globalSettings.apiSender = document.getElementById('api-sender').value;
+            
+            localStorage.setItem('imersfow_global', JSON.stringify(globalSettings));
+            
+            if(globalSettings.clientUrl && globalSettings.clientUrl.startsWith('http')) {
+                showToast('Menyinkronkan pengaturan ke Google Sheets...');
+                
+                fetch(globalSettings.clientUrl, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ 
+                        action: "save_config", 
+                        waGateway: globalSettings.waGateway, 
+                        apiProvider: globalSettings.apiProvider, 
+                        apiToken: globalSettings.apiToken, 
+                        apiSender: globalSettings.apiSender 
+                    }) 
+                }).then(() => { 
+                    setTimeout(() => {
+                        showToast('Konfigurasi WA disinkronkan ke Database Cangkang!');
+                    }, 1000); 
+                }).catch((error) => {
+                    console.error("Error saving settings:", error);
+                    showToast('Gagal menyinkronkan pengaturan ke Database Cangkang.');
+                });
+            } else { 
+                showToast('Pengaturan lokal disimpan. Wajib isi URL Web App agar aktif!'); 
+            }
+        }
+
+        // =========================================================================
+        // DASHBOARD LOGIC
+        // =========================================================================
+        function renderDashboard() {
+            document.getElementById('stat-total-forms').innerText = savedForms.length;
+            
+            let totalLeads = 0; 
+            savedForms.forEach(f => { 
+                totalLeads += (f.leads || 0); 
+            });
+            document.getElementById('stat-total-leads').innerText = totalLeads.toLocaleString();
+            
+            let conversionRateStr = "0.0%";
+            if(totalLeads > 0) {
+                let simulatedViews = totalLeads * (Math.floor(Math.random() * 5) + 3); 
+                let calcConv = (totalLeads / simulatedViews) * 100;
+                conversionRateStr = calcConv.toFixed(1) + "%";
+            }
+            document.getElementById('stat-conversion-rate').innerText = conversionRateStr;
+            
+            const tbody = document.getElementById('dashboard-table-body'); 
+            tbody.innerHTML = '';
+            
+            if(savedForms.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500 font-medium">Belum ada form yang tersimpan. Ayo buat form pertama Anda!</td></tr>`; 
+                return;
+            }
+            
+            savedForms.forEach(form => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
+                        <td class="px-6 py-4 font-bold text-slate-900">${form.title}</td>
+                        <td class="px-6 py-4 text-slate-500 text-sm">${form.date}</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold inline-block">Aktif</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold text-sm border border-blue-100">
+                                <i class="ph-fill ph-users"></i> ${form.leads || 0}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="deleteForm('${form.id}')" class="text-rose-600 hover:text-white font-bold bg-rose-50 hover:bg-rose-500 px-3 py-1.5 rounded-lg transition text-xs">Hapus</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        async function syncDashboardData() {
+            const btn = document.getElementById('btn-sync');
+            const icon = document.getElementById('icon-sync');
+            
+            if (!globalSettings.clientUrl || !globalSettings.clientUrl.startsWith('http')) {
+                showToast('URL Cangkang Google Sheets belum diatur di menu Integrasi API!');
+                switchTab('settings');
+                return;
+            }
+
+            btn.disabled = true;
+            icon.classList.add('animate-spin');
+            showToast('Menyinkronkan data dengan database cangkang...');
+
+            try {
+                const result = await fetchWithBackoff(globalSettings.clientUrl + "?action=sync_leads");
+                
+                if (result && result.status === 'success' && result.data) {
+                    savedForms.forEach(f => {
+                        if (result.data[f.title] !== undefined) {
+                            f.leads = parseInt(result.data[f.title]) || 0;
+                        }
+                    });
+                    localStorage.setItem('imersfow_forms', JSON.stringify(savedForms));
+                    renderDashboard();
+                    showToast('Sinkronisasi berhasil! Data terbaru ditampilkan.');
+                } else {
+                    throw new Error("Format data tidak sesuai");
+                }
+            } catch (error) {
+                console.warn('Sync Error:', error);
+                showToast('Gagal sinkron. Pastikan script Cangkang di Google Sheets sudah diupdate.');
+            } finally {
+                btn.disabled = false;
+                icon.classList.remove('animate-spin');
+            }
+        }
+
+        function deleteForm(id) {
+            if(confirm('Yakin ingin menghapus form ini?')) { 
+                savedForms = savedForms.filter(f => f.id !== id); 
+                localStorage.setItem('imersfow_forms', JSON.stringify(savedForms)); 
+                renderDashboard(); 
+                showToast('Form berhasil dihapus!'); 
+            }
+        }
+
+        function saveFormToDashboard() {
+            let hasCalculation = formFields.some(f => /=\s*(\d+)/.test(f.options));
+            
+            const newForm = { 
+                id: 'frm_' + Date.now(), 
+                title: formConfig.title, 
+                date: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' }), 
+                leads: 0,
+                fields: JSON.parse(JSON.stringify(formFields)), 
+                config: JSON.parse(JSON.stringify(formConfig)),
+                hasCalc: hasCalculation
+            };
+            
+            savedForms.unshift(newForm); 
+            localStorage.setItem('imersfow_forms', JSON.stringify(savedForms));
+            showToast('Form berhasil disimpan & dipublish!');
+            setTimeout(() => { switchTab('dashboard'); }, 1500);
+        }
+
+        // =========================================================================
+        // TEMPLATE ENGINE LOGIC
+        // =========================================================================
+        async function initTemplateEngine() {
+            const grid = document.getElementById('template-grid');
+            
+            if (!globalSettings.clientUrl || !globalSettings.clientUrl.startsWith('http')) {
+                grid.innerHTML = `
+                    <div onclick="useTemplate('blank')" class="border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition min-h-[220px]">
+                        <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-4">
+                            <i class="ph-bold ph-plus text-3xl"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-lg">Mulai dari Nol</h3>
+                        <p class="text-xs text-slate-500 mt-2">Buat form kosong sesuai imajinasi Anda.</p>
+                    </div>
+                    <div class="col-span-1 md:col-span-2 p-6 flex flex-col items-center justify-center text-center bg-blue-50 rounded-2xl border border-blue-200">
+                        <i class="ph-fill ph-link text-4xl text-blue-400 mb-3"></i>
+                        <p class="font-bold text-blue-800">Gallery Template Terkunci</p>
+                        <p class="text-sm text-blue-600 mt-1 mb-4">Silakan masukkan URL Web App (Cangkang) Anda di menu Pengaturan untuk membuka akses ke seluruh template.</p>
+                        <button onclick="closeTemplateModal(); switchTab('settings')" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md transition">Buka Pengaturan Integrasi</button>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-500"><i class="ph-bold ph-spinner animate-spin text-3xl mb-3 text-blue-500"></i><p>Menarik data template via Cangkang...</p></div>';
+            
+            try {
+                const result = await fetchWithBackoff(globalSettings.clientUrl + "?action=get_templates");
+                
+                if(result && result.status === 'success') {
+                    availableTemplates = result.data;
+                    
+                    if(Object.keys(availableTemplates).length === 0) {
+                        showTemplateError("Belum ada template di Database Master.");
+                    } else {
+                        renderCategorySidebar();
+                        filterTemplates('Semua');
+                    }
+                } else {
+                    showTemplateError("Cangkang merespon dengan error atau data tidak valid.");
+                }
+            } catch (error) {
+                console.warn("Fetch Gagal. Detail:", error.message);
+                showTemplateError("Gagal mengambil data dari Cangkang! Pastikan URL Cangkang benar.");
+            }
+        }
+
+        function showTemplateError(message) {
+            const grid = document.getElementById('template-grid');
+            if(!grid) return;
+            grid.innerHTML = `
+                <div onclick="useTemplate('blank')" class="border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition min-h-[220px]">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-4">
+                        <i class="ph-bold ph-plus text-3xl"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-lg">Mulai dari Nol</h3>
+                    <p class="text-xs text-slate-500 mt-2">Buat form kosong sesuai imajinasi Anda.</p>
+                </div>
+                <div class="col-span-1 md:col-span-2 p-6 text-center text-rose-600 font-medium bg-rose-50 rounded-2xl border border-rose-200">
+                    <i class="ph-fill ph-warning-circle text-4xl mb-3"></i>
+                    <p class="font-bold">Gagal Membaca Template!</p>
+                    <p class="text-sm mt-1 text-rose-500">Diagnosa: ${message}</p>
+                </div>
+            `;
+        }
+
+        function renderTemplateCards(categoryFilter) {
+            const grid = document.getElementById('template-grid');
+            if(!grid) return;
+            
+            let html = `
+                <div onclick="useTemplate('blank')" class="border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition group min-h-[220px]">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-4 group-hover:bg-blue-100 group-hover:text-blue-500 transition">
+                        <i class="ph-bold ph-plus text-3xl"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-lg">Mulai dari Nol</h3>
+                    <p class="text-xs text-slate-500 mt-2">Buat form kosong sesuai imajinasi Anda.</p>
+                </div>
+            `; 
+            
+            for (const key in availableTemplates) {
+                const tpl = availableTemplates[key];
+                if (categoryFilter === 'Semua' || tpl.category === categoryFilter) {
+                    html += `
+                    <div onclick="useTemplate('${key}')" class="border border-slate-200 rounded-2xl p-6 flex flex-col cursor-pointer hover:border-${tpl.color.split('-')[1]}-500 hover:shadow-lg transition bg-white group min-h-[220px] relative overflow-hidden">
+                        <div class="w-14 h-14 rounded-xl ${tpl.bg} ${tpl.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <i class="ph-fill ${tpl.icon} text-3xl"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-lg mb-1">${tpl.name}</h3>
+                        <p class="text-xs text-slate-500 mb-4 line-clamp-2">Kategori: <b>${tpl.category || 'Lainnya'}</b>.</p>
+                        <div class="mt-auto flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-400">${tpl.fields.length} Field Data</span>
+                            <div class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition">
+                                <i class="ph-bold ph-arrow-right"></i>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+            }
+            grid.innerHTML = html;
+        }
+
+        function filterTemplates(category) {
+            currentCategoryFilter = category;
+            
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-100', 'text-blue-700', 'font-bold');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-200', 'font-medium');
+            });
+            
+            const safeId = category.replace(/[^a-zA-Z0-9]/g, '-');
+            const activeBtn = document.getElementById('btn-cat-' + safeId);
+            
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-200', 'font-medium');
+                activeBtn.classList.add('bg-blue-100', 'text-blue-700', 'font-bold');
+            }
+            
+            renderTemplateCards(category);
+        }
+
+        function renderCategorySidebar() {
+            const sidebar = document.getElementById('category-sidebar');
+            let uniqueCategories = new Set();
+            for (const key in availableTemplates) {
+                if (availableTemplates[key].category) {
+                    uniqueCategories.add(availableTemplates[key].category);
+                }
+            }
+            
+            let html = `<p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-3">Kategori</p>`;
+            html += `<button onclick="filterTemplates('Semua')" id="btn-cat-Semua" class="cat-btn text-left px-4 py-2.5 rounded-xl bg-blue-100 text-blue-700 font-bold text-sm transition w-full">Semua Template</button>`;
+            
+            uniqueCategories.forEach(cat => {
+                const safeId = cat.replace(/[^a-zA-Z0-9]/g, '-');
+                html += `<button onclick="filterTemplates('${cat}')" id="btn-cat-${safeId}" class="cat-btn text-left px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-200 font-medium text-sm transition w-full">${cat}</button>`;
+            });
+            sidebar.innerHTML = html;
+        }
+
+        function useTemplate(key) {
+            closeTemplateModal();
+            
+            if(key === 'blank') {
+                formConfig = JSON.parse(JSON.stringify(defaultFormConfig));
+                formFields = JSON.parse(JSON.stringify(defaultFormFields));
+                document.querySelector('input[name="header_type"][value="solid"]').checked = true;
+                document.querySelector('input[name="cta_type"][value="solid"]').checked = true;
+            } else {
+                const tpl = availableTemplates[key];
+                formConfig = JSON.parse(JSON.stringify(tpl.config));
+                formFields = JSON.parse(JSON.stringify(tpl.fields));
+                document.querySelector('input[name="header_type"][value="gradient"]').checked = true;
+                document.querySelector('input[name="cta_type"][value="gradient"]').checked = true;
+            }
+
+            formConfig.titleColorType = formConfig.titleColorType || 'solid';
+            formConfig.titleColor1 = formConfig.titleColor1 || '#ffffff';
+            formConfig.titleColor2 = formConfig.titleColor2 || '#fef08a';
+            formConfig.ctaTextColorType = formConfig.ctaTextColorType || 'solid';
+            formConfig.ctaTextColor1 = formConfig.ctaTextColor1 || '#ffffff';
+            formConfig.ctaTextColor2 = formConfig.ctaTextColor2 || '#fef08a';
+            formConfig.enablePixel = formConfig.enablePixel || false;
+            formConfig.fbPixel = formConfig.fbPixel || '';
+            formConfig.tiktokPixel = formConfig.tiktokPixel || '';
+            formConfig.googlePixel = formConfig.googlePixel || '';
+
+            document.getElementById('cfg-title').value = formConfig.title; 
+            document.getElementById('cfg-wa').value = formConfig.waNumber;
+            document.getElementById('cfg-wa-intro').value = formConfig.waIntro; 
+            document.getElementById('cfg-wa-footer').value = formConfig.waFooter;
+            document.getElementById('cfg-btn-text').value = formConfig.btnText; 
+            document.getElementById('cfg-logo').value = formConfig.logoUrl;
+            
+            document.querySelector(`input[name="displayMode"][value="${formConfig.displayMode}"]`).checked = true;
+            
+            document.getElementById('cfg-trust-toggle').checked = formConfig.trustBadge; 
+            document.getElementById('cfg-trust-title').value = formConfig.trustTitle; 
+            document.getElementById('cfg-trust-desc').value = formConfig.trustDesc;
+            
+            document.querySelector(`input[name="title_color_type"][value="${formConfig.titleColorType}"]`).checked = true;
+            document.querySelector(`input[name="cta_text_type"][value="${formConfig.ctaTextColorType}"]`).checked = true;
+            
+            document.getElementById('cfg-pixel-toggle').checked = formConfig.enablePixel;
+            document.getElementById('cfg-pixel-fb').value = formConfig.fbPixel;
+            document.getElementById('cfg-pixel-tt').value = formConfig.tiktokPixel;
+            document.getElementById('cfg-pixel-gg').value = formConfig.googlePixel;
+
+            toggleColorMode('header'); 
+            toggleColorMode('cta'); 
+            toggleTextColorMode('title');
+            toggleTextColorMode('cta_text');
+
+            updateConfig();
+            switchTab('builder'); 
+            goToStep(1);
+        }
+
+        // =========================================================================
+        // SEQUENCE WA LOGIC
+        // =========================================================================
+        function renderSequenceViews() {
+            const selectTarget = document.getElementById('seq-form-target');
+            if (!selectTarget) return;
+
+            const currentSelection = selectTarget.value;
+
+            selectTarget.innerHTML = '<option value="">-- Pilih Form yang Ingin Diatur --</option>';
+            savedForms.forEach(f => {
+                selectTarget.innerHTML += `<option value="${f.id}">${f.title}</option>`;
+            });
+
+            if (currentSelection && savedForms.find(f => f.id === currentSelection)) {
+                selectTarget.value = currentSelection;
+            } else if (savedForms.length > 0) {
+                selectTarget.value = savedForms[0].id;
+            }
+
+            renderSequenceVariables();
+        }
+
+        function renderSequenceVariables() {
+            const formId = document.getElementById('seq-form-target').value;
+            const container = document.getElementById('seq-variable-container');
+            
+            let html = `<span class="text-[10px] font-bold text-slate-400 uppercase">Variabel:</span>`;
+            
+            if (!formId) {
+                container.innerHTML = html + `<span class="text-xs text-slate-400 italic">Pilih form target terlebih dahulu</span>`;
+                return;
+            }
+
+            const form = savedForms.find(f => f.id === formId);
+            if (!form || !form.fields) {
+                container.innerHTML = html + `<span class="text-xs text-slate-400 italic">Form tidak memiliki data field yang valid</span>`;
+                return;
+            }
+
+            const colors = ['blue', 'emerald', 'amber', 'purple', 'rose', 'teal'];
+            form.fields.forEach((f, idx) => {
+                const c = colors[idx % colors.length];
+                html += `<button onclick="insertVar('[${f.label}]')" class="text-xs bg-${c}-50 text-${c}-600 hover:bg-${c}-100 font-bold px-2.5 py-1.5 rounded-lg border border-${c}-100 transition max-w-[150px] truncate" title="[${f.label}]">[${f.label}]</button>`;
+            });
+
+            if (form.hasCalc) {
+                html += `<button onclick="insertVar('[Total_Tagihan]')" class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold px-2.5 py-1.5 rounded-lg border border-slate-300 transition shadow-sm">[Total_Tagihan]</button>`;
+            }
+
+            container.innerHTML = html;
+            updateSeqPreview();
+        }
+
+        function renderTimeline() {
+            const container = document.getElementById('sequence-timeline');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            sequencesData.forEach((seq, index) => {
+                const isActive = seq.id === activeSeqId;
+                const borderClass = isActive ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-200 hover:bg-slate-50';
+                const numBgClass = isActive ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500';
+                const titleClass = isActive ? 'text-emerald-800' : 'text-slate-700';
+
+                let previewText = seq.msg.replace(/\n/g, ' ');
+                if(!previewText.trim()) previewText = 'Pesan kosong...';
+
+                container.innerHTML += `
+                    <div onclick="selectSequence(${seq.id})" class="flex items-center gap-3 p-3 rounded-xl border ${borderClass} cursor-pointer transition animate-fade-in relative group">
+                        <div class="w-8 h-8 rounded-full ${numBgClass} flex items-center justify-center font-bold text-xs flex-shrink-0">${index + 1}</div>
+                        <div class="flex-1 overflow-hidden">
+                            <p class="text-sm font-bold ${titleClass}">Kirim: ${seq.timeVal} ${seq.timeUnit} Setelah Order</p>
+                            <p class="text-xs text-slate-500 truncate">${previewText}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function selectSequence(id) {
+            activeSeqId = id;
+            const seq = sequencesData.find(s => s.id === id);
+            if(seq) {
+                document.getElementById('seq-time-val').value = seq.timeVal;
+                document.getElementById('seq-time-unit').value = seq.timeUnit;
+                document.getElementById('seq-editor').value = seq.msg;
+                
+                // Set the stop-paid checkbox
+                if(document.getElementById('seq-stop-paid')) {
+                    document.getElementById('seq-stop-paid').checked = seq.stopIfPaid || false;
+                }
+                
+                updateSeqPreview();
+                renderTimeline(); 
+            }
+        }
+
+        function addSequenceItem() {
+            const newSeq = {
+                id: Date.now(),
+                timeVal: 1,
+                timeUnit: 'Hari',
+                msg: 'Halo, ini pesan follow-up otomatis...',
+                stopIfPaid: true
+            };
+            sequencesData.push(newSeq);
+            selectSequence(newSeq.id);
+            showToast('Jadwal baru ditambahkan!');
+        }
+
+        function updateSequenceData() {
+            const seq = sequencesData.find(s => s.id === activeSeqId);
+            if(seq) {
+                seq.timeVal = document.getElementById('seq-time-val').value;
+                seq.timeUnit = document.getElementById('seq-time-unit').value;
+                seq.msg = document.getElementById('seq-editor').value;
+                
+                if(document.getElementById('seq-stop-paid')) {
+                    seq.stopIfPaid = document.getElementById('seq-stop-paid').checked;
+                }
+                
+                renderTimeline(); 
+                updateSeqPreview(); 
+            }
+        }
+
+        function deleteActiveSequence() {
+            if(sequencesData.length <= 1) {
+                showToast('Minimal harus ada 1 pesan sequence!');
+                return;
+            }
+            if(confirm('Hapus jadwal pesan ini?')) {
+                sequencesData = sequencesData.filter(s => s.id !== activeSeqId);
+                selectSequence(sequencesData[0].id); 
+                showToast('Jadwal berhasil dihapus!');
+            }
+        }
+
+        function insertFormat(char) {
+            const textarea = document.getElementById('seq-editor');
+            const start = textarea.selectionStart; 
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            
+            if (start !== end) {
+                const selected = text.substring(start, end);
+                textarea.value = text.substring(0, start) + char + selected + char + text.substring(end);
+                textarea.selectionStart = start;
+                textarea.selectionEnd = end + 2;
+            } else {
+                textarea.value = text.substring(0, start) + char + char + text.substring(end);
+                textarea.selectionStart = textarea.selectionEnd = start + 1;
+            }
+            
+            textarea.focus(); 
+            updateSequenceData();
+        }
+
+        function insertVar(varString) {
+            const textarea = document.getElementById('seq-editor');
+            const start = textarea.selectionStart;
+            const text = textarea.value;
+            
+            textarea.value = text.substring(0, start) + varString + text.substring(start);
+            textarea.selectionStart = textarea.selectionEnd = start + varString.length;
+            textarea.focus();
+            updateSequenceData(); 
+        }
+
+        function updateSeqPreview() {
+            let text = document.getElementById('seq-editor').value;
+            
+            if(!text.trim()) {
+                document.getElementById('seq-preview-bubble').innerHTML = "<span class='text-slate-400 italic'>Ketik pesan di editor untuk melihat *Preview* di sini...</span>";
+                return;
+            }
+
+            text = text.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+            text = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            text = text.replace(/\*([^\*]+)\*/g, "<b>$1</b>");
+            text = text.replace(/_([^_]+)_/g, "<i>$1</i>");
+            text = text.replace(/~([^~]+)~/g, "<s>$1</s>");
+            
+            text = text.replace(/\[(.*?)\]/g, '<span class="bg-blue-100 text-blue-800 px-1 rounded text-xs font-bold whitespace-nowrap overflow-hidden inline-block align-bottom max-w-[150px] text-ellipsis">Data $1</span>');
+            
+            document.getElementById('seq-preview-bubble').innerHTML = text;
+        }
+        
+        function saveSequenceToServer() {
+            const selectTarget = document.getElementById('seq-form-target');
+            if (!selectTarget || !selectTarget.value) {
+                showToast("Pilih Form Target terlebih dahulu!");
+                return;
+            }
+            
+            const formId = selectTarget.value;
+            const form = savedForms.find(f => f.id === formId);
+            
+            if (!globalSettings.clientUrl || !globalSettings.clientUrl.startsWith('http')) {
+                showToast("Gagal: Anda belum mengatur URL Cangkang di menu Integrasi API!");
+                return;
+            }
+            
+            showToast("Menyimpan aturan Sequence ke Google Sheets...");
+            
+            const payload = {
+                action: "save_sequence_rules",
+                formName: form.title,
+                sequences: sequencesData
+            };
+            
+            fetch(globalSettings.clientUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                setTimeout(() => showToast("Aturan Sequence berhasil disimpan di Google Sheets!"), 1000);
+            }).catch(e => {
+                console.error(e);
+                showToast("Terjadi kesalahan saat menyimpan ke Google Sheets.");
+            });
+        }
+
+        // =========================================================================
+        // FORM BUILDER LOGIC
+        // =========================================================================
+        function goToStep(step) {
+            currentStep = step; 
+            document.getElementById('progress-bar').style.width = ((step - 1) / 3) * 100 + '%';
+            
+            document.querySelectorAll('.step-btn').forEach(btn => {
+                const s = parseInt(btn.getAttribute('data-step')); 
+                const circle = btn.querySelector('.step-circle');
+                
+                if (s <= step) { 
+                    circle.classList.add('bg-rose-500', 'text-white', 'border-rose-500'); 
+                    circle.classList.remove('bg-white', 'text-slate-400', 'border-slate-300'); 
+                } else { 
+                    circle.classList.remove('bg-rose-500', 'text-white', 'border-rose-500'); 
+                    circle.classList.add('bg-white', 'text-slate-400', 'border-slate-300'); 
+                }
+            });
+            
+            for (let i = 1; i <= 4; i++) {
+                const el = document.getElementById('step-' + i);
+                if (i === step) { 
+                    el.style.transform = 'translateX(0)'; 
+                    el.style.opacity = '1'; 
+                    el.style.pointerEvents = 'auto'; 
+                    el.style.zIndex = '10'; 
+                } else if (i < step) { 
+                    el.style.transform = 'translateX(-100%)'; 
+                    el.style.opacity = '0'; 
+                    el.style.pointerEvents = 'none'; 
+                    el.style.zIndex = '0'; 
+                } else { 
+                    el.style.transform = 'translateX(100%)'; 
+                    el.style.opacity = '0'; 
+                    el.style.pointerEvents = 'none'; 
+                    el.style.zIndex = '0'; 
+                }
+            }
+            
+            if(step === 2) renderCanvas(); 
+            if(step === 3) renderPreview(); 
+            if(step === 4) generateCode();
+        }
+
+        function generateId() { 
+            return 'f_' + Math.random().toString(36).substr(2, 6); 
+        }
         
         function getFieldLabelText(type) { 
             const dict = { 
@@ -1780,10 +1869,21 @@
         }
 
         function addField(type) {
-            let field = { id: generateId(), type: type, label: getFieldLabelText(type), required: false, placeholder: '' };
-            if(['select', 'radio', 'checkbox'].includes(type)) field.options = 'Opsi A, Opsi B, Opsi C';
+            let field = { 
+                id: generateId(), 
+                type: type, 
+                label: getFieldLabelText(type), 
+                required: false, 
+                placeholder: '' 
+            };
+            
+            if(['select', 'radio', 'checkbox'].includes(type)) {
+                field.options = 'Opsi A, Opsi B, Opsi C';
+            }
+            
             formFields.push(field); 
             renderCanvas();
+            
             setTimeout(() => { 
                 const wrap = document.getElementById('step-2').querySelector('.flex-1'); 
                 wrap.scrollTo({ top: wrap.scrollHeight, behavior: 'smooth' }); 
@@ -1798,10 +1898,15 @@
         function updateField(id, key, value) { 
             const field = formFields.find(f => f.id === id); 
             if(field) { 
-                if(key === 'required') field[key] = value === 'true'; 
-                else field[key] = value; 
+                if(key === 'required') {
+                    field[key] = value === 'true'; 
+                } else {
+                    field[key] = value; 
+                }
             } 
-            if(key === 'options') renderCanvas(); 
+            if(key === 'options') {
+                renderCanvas(); 
+            }
         }
 
         function renderCanvas() {
@@ -1830,28 +1935,46 @@
             }
             
             const logoEl = document.getElementById('canvas-logo'); 
-            if(formConfig.logoUrl) { logoEl.src = formConfig.logoUrl; logoEl.style.display = 'block'; } 
-            else { logoEl.style.display = 'none'; }
+            if(formConfig.logoUrl) { 
+                logoEl.src = formConfig.logoUrl; 
+                logoEl.style.display = 'block'; 
+            } else { 
+                logoEl.style.display = 'none'; 
+            }
             
             const themeHex = getThemeColor(); 
             const themeRgb = hexToRgb(themeHex);
             
             const trustEl = document.getElementById('canvas-trust'); 
             if(formConfig.trustBadge) { 
-                trustEl.style.display = 'flex'; trustEl.style.backgroundColor = `rgba(${themeRgb}, 0.08)`; trustEl.style.borderColor = `rgba(${themeRgb}, 0.2)`; 
-                document.getElementById('canvas-trust-title').style.color = themeHex; document.getElementById('canvas-trust-icon').style.color = themeHex; 
-                document.getElementById('canvas-trust-title').innerText = formConfig.trustTitle; document.getElementById('canvas-trust-desc').innerText = formConfig.trustDesc; 
-            } else { trustEl.style.display = 'none'; }
+                trustEl.style.display = 'flex'; 
+                trustEl.style.backgroundColor = `rgba(${themeRgb}, 0.08)`; 
+                trustEl.style.borderColor = `rgba(${themeRgb}, 0.2)`; 
+                document.getElementById('canvas-trust-title').style.color = themeHex; 
+                document.getElementById('canvas-trust-icon').style.color = themeHex; 
+                document.getElementById('canvas-trust-title').innerText = formConfig.trustTitle; 
+                document.getElementById('canvas-trust-desc').innerText = formConfig.trustDesc; 
+            } else { 
+                trustEl.style.display = 'none'; 
+            }
 
             const totalBoxEl = document.getElementById('canvas-total-box'); 
             let isTotalVisible = false;
             
-            formFields.forEach(f => { if(['select', 'radio', 'checkbox'].includes(f.type) && /=\s*(\d+)/.test(f.options)) isTotalVisible = true; });
+            formFields.forEach(f => { 
+                if(['select', 'radio', 'checkbox'].includes(f.type) && /=\s*(\d+)/.test(f.options)) {
+                    isTotalVisible = true; 
+                }
+            });
             
             if(isTotalVisible) { 
-                totalBoxEl.style.display = 'flex'; document.getElementById('canvas-total-value').style.color = themeHex; 
-                let previewVal = 0; document.getElementById('canvas-total-value').innerText = 'Rp ' + parseInt(previewVal).toLocaleString('id-ID'); 
-            } else { totalBoxEl.style.display = 'none'; }
+                totalBoxEl.style.display = 'flex'; 
+                document.getElementById('canvas-total-value').style.color = themeHex; 
+                let previewVal = 0; 
+                document.getElementById('canvas-total-value').innerText = 'Rp ' + parseInt(previewVal).toLocaleString('id-ID'); 
+            } else { 
+                totalBoxEl.style.display = 'none'; 
+            }
             
             const container = document.getElementById('canvas-fields'); 
             container.innerHTML = '';
@@ -1861,16 +1984,24 @@
                 div.className = 'group relative p-4 -mx-4 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200';
                 
                 let inputHtml = '';
-                if(['text', 'tel', 'email', 'number', 'date', 'time'].includes(f.type)) inputHtml = `<input type="${f.type}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm mt-2 pointer-events-none" placeholder="${f.placeholder}">`; 
-                else if (f.type === 'textarea') inputHtml = `<textarea class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm mt-2 pointer-events-none resize-none" rows="2" placeholder="${f.placeholder}"></textarea>`; 
-                else if (f.type === 'select') inputHtml = `<select class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm mt-2 pointer-events-none"><option>Pilih...</option></select>`; 
-                else if (f.type === 'radio') { 
+                
+                if(['text', 'tel', 'email', 'number', 'date', 'time'].includes(f.type)) { 
+                    inputHtml = `<input type="${f.type}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm mt-2 pointer-events-none" placeholder="${f.placeholder}">`; 
+                } else if (f.type === 'textarea') { 
+                    inputHtml = `<textarea class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm mt-2 pointer-events-none resize-none" rows="2" placeholder="${f.placeholder}"></textarea>`; 
+                } else if (f.type === 'select') { 
+                    inputHtml = `<select class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm mt-2 pointer-events-none"><option>Pilih...</option></select>`; 
+                } else if (f.type === 'radio') { 
                     inputHtml = `<div class="mt-2 space-y-2 pointer-events-none">`; 
-                    (f.options || '').split(',').forEach(o => { inputHtml += `<label class="flex items-center gap-2 text-sm text-slate-600"><input type="radio" class="accent-blue-500"> ${o.trim()}</label>`; }); 
+                    (f.options || '').split(',').forEach(o => { 
+                        inputHtml += `<label class="flex items-center gap-2 text-sm text-slate-600"><input type="radio" class="accent-blue-500"> ${o.trim()}</label>`; 
+                    }); 
                     inputHtml += `</div>`; 
                 } else if (f.type === 'checkbox') { 
                     inputHtml = `<div class="mt-2 space-y-2 pointer-events-none">`; 
-                    (f.options || '').split(',').forEach(o => { inputHtml += `<label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" class="accent-blue-500 rounded"> ${o.trim()}</label>`; }); 
+                    (f.options || '').split(',').forEach(o => { 
+                        inputHtml += `<label class="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" class="accent-blue-500 rounded"> ${o.trim()}</label>`; 
+                    }); 
                     inputHtml += `</div>`; 
                 }
 
@@ -1882,115 +2013,434 @@
                                 <option value="false" ${!f.required ? 'selected' : ''}>Opsional</option>
                                 <option value="true" ${f.required ? 'selected' : ''}>Wajib *</option>
                             </select>
-                            <button onclick="removeField('${f.id}')" class="w-7 h-7 rounded bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center"><i class="ph-bold ph-trash"></i></button>
+                            <button onclick="removeField('${f.id}')" class="w-7 h-7 rounded bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center">
+                                <i class="ph-bold ph-trash"></i>
+                            </button>
                         </div>
                     </div>
-                    ${['select', 'radio', 'checkbox'].includes(f.type) ? `<input type="text" value="${f.options}" class="w-full text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1.5 rounded outline-none border border-blue-100 mt-1 mb-2" onchange="updateField('${f.id}', 'options', this.value)" placeholder="Opsi A, Opsi B, Opsi C (Pisahkan dgn koma)">` : ''}
-                    ${!['select', 'radio', 'checkbox'].includes(f.type) ? `<input type="text" value="${f.placeholder}" class="w-full text-xs text-slate-400 bg-transparent outline-none mt-1 mb-1 italic" onchange="updateField('${f.id}', 'placeholder', this.value)" placeholder="Ketik placeholder instruksi...">` : ''}
+                    ${['select', 'radio', 'checkbox'].includes(f.type) ? `
+                        <input type="text" value="${f.options}" class="w-full text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1.5 rounded outline-none border border-blue-100 mt-1 mb-2" onchange="updateField('${f.id}', 'options', this.value)" placeholder="Opsi A, Opsi B, Opsi C (Pisahkan dgn koma)">
+                    ` : ''}
+                    ${!['select', 'radio', 'checkbox'].includes(f.type) ? `
+                        <input type="text" value="${f.placeholder}" class="w-full text-xs text-slate-400 bg-transparent outline-none mt-1 mb-1 italic" onchange="updateField('${f.id}', 'placeholder', this.value)" placeholder="Ketik placeholder instruksi...">
+                    ` : ''}
                     ${inputHtml}
                 `;
                 container.appendChild(div);
             });
         }
 
+        // =========================================================================
+        // CODE GENERATOR LOGIC
+        // =========================================================================
         function generateCSS() {
-            const themeHex = getThemeColor(); const themeRgb = hexToRgb(themeHex); 
+            const themeHex = getThemeColor(); 
+            const themeRgb = hexToRgb(themeHex); 
+            
             return `
 <style>
-.im-wrapper { font-family: 'Inter', sans-serif; background: #fff; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); overflow: hidden; max-width: 450px; margin: 0 auto; border: 1px solid #e2e8f0; width: 100%; box-sizing: border-box; } 
-.im-header { padding: 24px; text-align: center; color: white; transition: background 0.3s ease; } 
-.im-logo { max-height: 48px; margin: 0 auto 12px auto; display: block; object-fit: contain; } 
-.im-title { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.3; } 
-.im-body { padding: 24px; } 
-.im-group { margin-bottom: 16px; } 
-.im-label { display: block; font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 6px; } 
-.im-input { width: 100%; padding: 12px 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 14px; box-sizing: border-box; transition: all 0.2s; color: #0f172a; } 
-.im-input:focus { outline: none; border-color: ${themeHex}; box-shadow: 0 0 0 3px rgba(${themeRgb},0.1); background: #fff; } 
-.im-radio-group, .im-checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; } 
-.im-radio-label, .im-checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #334155; cursor: pointer; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; transition: background 0.2s; } 
-.im-radio-label:hover, .im-checkbox-label:hover { background: #f1f5f9; } 
-.im-radio-label input, .im-checkbox-label input { accent-color: ${themeHex}; width: 16px; height: 16px; cursor: pointer; } 
-.im-footer { margin-top: 24px; } 
-.im-total-box { display: none; justify-content: space-between; align-items: center; padding: 16px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; margin-bottom: 16px; } 
-.im-total-label { font-size: 13px; font-weight: 700; color: #475569; } 
-.im-total-value { font-size: 18px; font-weight: 800; color: ${themeHex}; } 
-.im-trust { display: flex; gap: 12px; padding: 12px 16px; background: rgba(${themeRgb}, 0.08); border: 1px solid rgba(${themeRgb}, 0.2); border-radius: 12px; margin-bottom: 16px; align-items: flex-start; } 
-.im-trust-title { font-size: 13px; font-weight: 700; color: ${themeHex}; line-height: 1.2; } 
-.im-trust-desc { font-size: 11px; color: #64748b; margin-top: 4px; line-height: 1.4; } 
-.im-btn { width: 100%; padding: 14px; border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); } 
-.im-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+.im-wrapper { 
+    font-family: 'Inter', sans-serif; 
+    background: #fff; 
+    border-radius: 24px; 
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); 
+    overflow: hidden; 
+    max-width: 450px; 
+    margin: 0 auto; 
+    border: 1px solid #e2e8f0; 
+    width: 100%; 
+    box-sizing: border-box; 
+} 
+.im-header { 
+    padding: 24px; 
+    text-align: center; 
+    color: white; 
+    transition: background 0.3s ease; 
+} 
+.im-logo { 
+    max-height: 48px; 
+    margin: 0 auto 12px auto; 
+    display: block; 
+    object-fit: contain; 
+} 
+.im-title { 
+    margin: 0; 
+    font-size: 20px; 
+    font-weight: 700; 
+    line-height: 1.3; 
+} 
+.im-body { 
+    padding: 24px; 
+} 
+.im-group { 
+    margin-bottom: 16px; 
+} 
+.im-label { 
+    display: block; 
+    font-size: 13px; 
+    font-weight: 700; 
+    color: #475569; 
+    margin-bottom: 6px; 
+} 
+.im-input { 
+    width: 100%; 
+    padding: 12px 16px; 
+    background: #f8fafc; 
+    border: 1px solid #cbd5e1; 
+    border-radius: 12px; 
+    font-size: 14px; 
+    box-sizing: border-box; 
+    transition: all 0.2s; 
+    color: #0f172a; 
+} 
+.im-input:focus { 
+    outline: none; 
+    border-color: ${themeHex}; 
+    box-shadow: 0 0 0 3px rgba(${themeRgb},0.1); 
+    background: #fff; 
+} 
+.im-radio-group, .im-checkbox-group { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px; 
+    margin-top: 8px; 
+} 
+.im-radio-label, .im-checkbox-label { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    font-size: 14px; 
+    color: #334155; 
+    cursor: pointer; 
+    padding: 8px 12px; 
+    background: #f8fafc; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 10px; 
+    transition: background 0.2s; 
+} 
+.im-radio-label:hover, .im-checkbox-label:hover { 
+    background: #f1f5f9; 
+} 
+.im-radio-label input, .im-checkbox-label input { 
+    accent-color: ${themeHex}; 
+    width: 16px; 
+    height: 16px; 
+    cursor: pointer; 
+} 
+.im-footer { 
+    margin-top: 24px; 
+} 
+.im-total-box { 
+    display: none; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 16px; 
+    background: #f8fafc; 
+    border: 2px dashed #cbd5e1; 
+    border-radius: 12px; 
+    margin-bottom: 16px; 
+} 
+.im-total-label { 
+    font-size: 13px; 
+    font-weight: 700; 
+    color: #475569; 
+} 
+.im-total-value { 
+    font-size: 18px; 
+    font-weight: 800; 
+    color: ${themeHex}; 
+} 
+.im-trust { 
+    display: flex; 
+    gap: 12px; 
+    padding: 12px 16px; 
+    background: rgba(${themeRgb}, 0.08); 
+    border: 1px solid rgba(${themeRgb}, 0.2); 
+    border-radius: 12px; 
+    margin-bottom: 16px; 
+    align-items: flex-start; 
+} 
+.im-trust-title { 
+    font-size: 13px; 
+    font-weight: 700; 
+    color: ${themeHex}; 
+    line-height: 1.2; 
+} 
+.im-trust-desc { 
+    font-size: 11px; 
+    color: #64748b; 
+    margin-top: 4px; 
+    line-height: 1.4; 
+} 
+.im-btn { 
+    width: 100%; 
+    padding: 14px; 
+    border: none; 
+    border-radius: 12px; 
+    color: white; 
+    font-weight: 700; 
+    font-size: 15px; 
+    cursor: pointer; 
+    transition: all 0.2s; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+} 
+.im-btn:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+}
 </style>`; 
         }
 
         function generateFormUI(isPreview = false) {
             let fieldsHtml = ''; 
+            
             formFields.forEach(f => {
-                let reqStar = f.required ? '<span style="color:#e11d48">*</span>' : ''; let reqAttr = f.required ? 'required' : ''; 
-                fieldsHtml += `<div class="im-group">\n    <label class="im-label">${f.label} ${reqStar}</label>\n`;
-                if(['text', 'tel', 'email', 'number', 'date', 'time'].includes(f.type)) fieldsHtml += `    <input type="${f.type}" name="${f.label}" class="im-input" placeholder="${f.placeholder}" ${reqAttr}>\n`; 
-                else if(f.type === 'textarea') fieldsHtml += `    <textarea name="${f.label}" class="im-input" placeholder="${f.placeholder}" rows="3" ${reqAttr}></textarea>\n`; 
+                let reqStar = f.required ? '<span style="color:#e11d48">*</span>' : ''; 
+                let reqAttr = f.required ? 'required' : ''; 
+                
+                fieldsHtml += `<div class="im-group">\n`;
+                fieldsHtml += `    <label class="im-label">${f.label} ${reqStar}</label>\n`;
+                
+                if(['text', 'tel', 'email', 'number', 'date', 'time'].includes(f.type)) { 
+                    fieldsHtml += `    <input type="${f.type}" name="${f.label}" class="im-input" placeholder="${f.placeholder}" ${reqAttr}>\n`; 
+                } 
+                else if(f.type === 'textarea') { 
+                    fieldsHtml += `    <textarea name="${f.label}" class="im-input" placeholder="${f.placeholder}" rows="3" ${reqAttr}></textarea>\n`; 
+                } 
                 else if(f.type === 'select') { 
-                    fieldsHtml += `    <select name="${f.label}" class="im-input" ${reqAttr}>\n        <option value="">Pilih...</option>\n`;
-                    (f.options || '').split(',').forEach(opt => { fieldsHtml += `        <option value="${opt.trim()}">${opt.trim()}</option>\n`; }); fieldsHtml += `    </select>\n`; 
+                    fieldsHtml += `    <select name="${f.label}" class="im-input" ${reqAttr}>\n`;
+                    fieldsHtml += `        <option value="">Pilih...</option>\n`;
+                    (f.options || '').split(',').forEach(opt => { 
+                        fieldsHtml += `        <option value="${opt.trim()}">${opt.trim()}</option>\n`; 
+                    }); 
+                    fieldsHtml += `    </select>\n`; 
                 } 
                 else if(f.type === 'radio') { 
-                    fieldsHtml += `    <div class="im-radio-group">\n`; (f.options || '').split(',').forEach(opt => { let val = opt.trim(); fieldsHtml += `        <label class="im-radio-label"><input type="radio" name="${f.label}" value="${val}" ${reqAttr}> ${val}</label>\n`; }); fieldsHtml += `    </div>\n`; 
+                    fieldsHtml += `    <div class="im-radio-group">\n`; 
+                    (f.options || '').split(',').forEach(opt => { 
+                        let val = opt.trim(); 
+                        fieldsHtml += `        <label class="im-radio-label"><input type="radio" name="${f.label}" value="${val}" ${reqAttr}> ${val}</label>\n`; 
+                    }); 
+                    fieldsHtml += `    </div>\n`; 
                 } 
                 else if(f.type === 'checkbox') { 
-                    fieldsHtml += `    <div class="im-checkbox-group">\n`; (f.options || '').split(',').forEach(opt => { let val = opt.trim(); fieldsHtml += `        <label class="im-checkbox-label"><input type="checkbox" name="${f.label}" value="${val}"> ${val}</label>\n`; }); fieldsHtml += `    </div>\n`; 
+                    fieldsHtml += `    <div class="im-checkbox-group">\n`; 
+                    (f.options || '').split(',').forEach(opt => { 
+                        let val = opt.trim(); 
+                        fieldsHtml += `        <label class="im-checkbox-label"><input type="checkbox" name="${f.label}" value="${val}"> ${val}</label>\n`; 
+                    }); 
+                    fieldsHtml += `    </div>\n`; 
                 }
+                
                 fieldsHtml += `</div>\n`;
             });
             
             const themeHex = getThemeColor(); 
-            const totalHtml = `<div id="im-total-box" class="im-total-box"><span class="im-total-label">Total Tagihan:</span><span id="im-total-value" class="im-total-value">Rp 0</span></div>`;
-            const trustHtml = formConfig.trustBadge ? `<div class="im-trust"><svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" style="color:${themeHex}; flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg><div><div class="im-trust-title">${formConfig.trustTitle}</div><div class="im-trust-desc">${formConfig.trustDesc}</div></div></div>` : '';
+            const totalHtml = `
+                <div id="im-total-box" class="im-total-box">
+                    <span class="im-total-label">Total Tagihan:</span>
+                    <span id="im-total-value" class="im-total-value">Rp 0</span>
+                </div>
+            `;
+            
+            const trustHtml = formConfig.trustBadge ? `
+                <div class="im-trust">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" style="color:${themeHex}; flex-shrink:0">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <polyline points="9 12 11 14 15 10"></polyline>
+                    </svg>
+                    <div>
+                        <div class="im-trust-title">${formConfig.trustTitle}</div>
+                        <div class="im-trust-desc">${formConfig.trustDesc}</div>
+                    </div>
+                </div>
+            ` : '';
+            
             const logoHtml = formConfig.logoUrl ? `<img src="${formConfig.logoUrl}" class="im-logo" alt="Logo">\n` : ''; 
             const submitAction = isPreview ? 'type="button" onclick="showToast(\'Ini Simulasi. Form asli akan memproses data ke Web App.\')"' : 'type="submit"';
             
-            let titleTextHtml = formConfig.titleColorType === 'gradient' ? `<h2 class="im-title" style="background: linear-gradient(135deg, ${formConfig.titleColor1}, ${formConfig.titleColor2}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: transparent;">${formConfig.title}</h2>\n` : `<h2 class="im-title" style="color: ${formConfig.titleColor1 || '#ffffff'};">${formConfig.title}</h2>\n`;
-            let btnTextHtml = formConfig.ctaTextColorType === 'gradient' ? `<span style="background: linear-gradient(135deg, ${formConfig.ctaTextColor1}, ${formConfig.ctaTextColor2}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: transparent;">${formConfig.btnText}</span>` : `<span style="color: ${formConfig.ctaTextColor1 || '#ffffff'};">${formConfig.btnText}</span>`;
+            let titleTextHtml = '';
+            if (formConfig.titleColorType === 'gradient') {
+                titleTextHtml = `<h2 class="im-title" style="background: linear-gradient(135deg, ${formConfig.titleColor1}, ${formConfig.titleColor2}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: transparent;">${formConfig.title}</h2>\n`;
+            } else {
+                titleTextHtml = `<h2 class="im-title" style="color: ${formConfig.titleColor1 || '#ffffff'};">${formConfig.title}</h2>\n`;
+            }
 
-            return `<div class="im-wrapper"><div class="im-header" style="background: ${formConfig.headerBg}">${logoHtml}${titleTextHtml}</div><form id="im-form" class="im-body" onsubmit="return false;">${fieldsHtml}<div class="im-footer">${totalHtml}${trustHtml}<button id="im-submit-btn" ${submitAction} class="im-btn" style="background: ${formConfig.ctaBg}">${btnTextHtml}</button></div></form></div>`;
+            let btnTextHtml = '';
+            if (formConfig.ctaTextColorType === 'gradient') {
+                btnTextHtml = `<span style="background: linear-gradient(135deg, ${formConfig.ctaTextColor1}, ${formConfig.ctaTextColor2}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: transparent;">${formConfig.btnText}</span>`;
+            } else {
+                btnTextHtml = `<span style="color: ${formConfig.ctaTextColor1 || '#ffffff'};">${formConfig.btnText}</span>`;
+            }
+
+            return `
+<div class="im-wrapper">
+    <div class="im-header" style="background: ${formConfig.headerBg}">
+        ${logoHtml}
+        ${titleTextHtml}
+    </div>
+    <form id="im-form" class="im-body" onsubmit="return false;">
+        ${fieldsHtml}
+        <div class="im-footer">
+            ${totalHtml}
+            ${trustHtml}
+            <button id="im-submit-btn" ${submitAction} class="im-btn" style="background: ${formConfig.ctaBg}">${btnTextHtml}</button>
+        </div>
+    </form>
+</div>
+`;
         }
 
         function renderPreview() {
-            const wrapper = document.getElementById('preview-wrapper'); const formHtml = generateCSS() + generateFormUI(true);
+            const wrapper = document.getElementById('preview-wrapper'); 
+            const formHtml = generateCSS() + generateFormUI(true);
             
-            if(formConfig.displayMode === 'embed') wrapper.innerHTML = `<div class="w-full max-w-md my-auto py-10">${formHtml}</div>`; 
-            else wrapper.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center relative"><p class="text-slate-400 text-sm font-medium mb-6">Tampilan Tombol Modal di Web Anda</p><button class="px-8 py-4 text-white font-bold rounded-xl shadow-lg transform hover:scale-105 transition" style="background: ${formConfig.ctaBg}">${formConfig.btnText}</button><div class="absolute inset-0 bg-slate-900/60 rounded-2xl flex items-center justify-center p-4 z-50"><div class="w-full max-w-sm scale-95 relative"><button class="absolute -top-3 -right-3 bg-white w-8 h-8 rounded-full font-bold shadow-md z-50">✕</button>${formHtml}</div></div></div>`; 
+            if(formConfig.displayMode === 'embed') { 
+                wrapper.innerHTML = `<div class="w-full max-w-md my-auto py-10">${formHtml}</div>`; 
+            } else { 
+                wrapper.innerHTML = `
+                    <div class="w-full h-full flex flex-col items-center justify-center relative">
+                        <p class="text-slate-400 text-sm font-medium mb-6">Tampilan Tombol Modal di Web Anda</p>
+                        <button class="px-8 py-4 text-white font-bold rounded-xl shadow-lg transform hover:scale-105 transition" style="background: ${formConfig.ctaBg}">
+                            ${formConfig.btnText}
+                        </button>
+                        <div class="absolute inset-0 bg-slate-900/60 rounded-2xl flex items-center justify-center p-4 z-50">
+                            <div class="w-full max-w-sm scale-95 relative">
+                                <button class="absolute -top-3 -right-3 bg-white w-8 h-8 rounded-full font-bold shadow-md z-50">✕</button>
+                                ${formHtml}
+                            </div>
+                        </div>
+                    </div>
+                `; 
+            }
             
             document.getElementById('wa-preview-name').innerText = "Admin " + formConfig.title.substring(0,10) + "..."; 
             let waText = `${formConfig.waIntro}\n\n*Form:* ${formConfig.title}\n`;
+            
             let isCalculationActive = false;
             
             formFields.forEach(f => { 
                 let dummy = '(Jawaban Kustomer)'; 
-                if(['radio', 'select'].includes(f.type)) { dummy = (f.options.split(',')[0] || '').trim(); if(/=\s*(\d+)/.test(f.options)) isCalculationActive = true; } 
-                if(f.type === 'checkbox') { dummy = (f.options.split(',')[0] || '').trim() + ', ...'; if(/=\s*(\d+)/.test(f.options)) isCalculationActive = true; } 
+                if(['radio', 'select'].includes(f.type)) { 
+                    dummy = (f.options.split(',')[0] || '').trim(); 
+                    if(/=\s*(\d+)/.test(f.options)) isCalculationActive = true; 
+                } 
+                if(f.type === 'checkbox') { 
+                    dummy = (f.options.split(',')[0] || '').trim() + ', ...'; 
+                    if(/=\s*(\d+)/.test(f.options)) isCalculationActive = true; 
+                } 
                 if(f.type === 'number') dummy = '1'; 
+                
                 waText += `*${f.label}:* ${dummy}\n`; 
             });
             
             if(isCalculationActive) waText += `\n*Total Tagihan:* Rp XXX.XXX\n`; 
-            waText += `\n${formConfig.waFooter}`; document.getElementById('wa-preview-text').innerText = waText;
+            waText += `\n${formConfig.waFooter}`; 
+            
+            document.getElementById('wa-preview-text').innerText = waText;
         }
 
         function generateCode() {
-            const rawFormHtml = generateFormUI(false); const isPopup = formConfig.displayMode === 'popup'; 
-            let popupWrapperStart = ''; let popupWrapperEnd = ''; let popupStyles = '';
+            const rawFormHtml = generateFormUI(false); 
+            const isPopup = formConfig.displayMode === 'popup'; 
+            let popupWrapperStart = '';
+            let popupWrapperEnd = '';
+            let popupStyles = '';
             
             if(isPopup) { 
-                popupStyles = `\n.im-trigger-btn { padding: 16px 32px; border-radius: 12px; font-weight: bold; color: white; border: none; cursor: pointer; font-size: 16px; background: ${formConfig.ctaBg}; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }\n.im-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; padding: 16px; }\n.im-overlay.im-show { opacity: 1; pointer-events: auto; }\n.im-modal { transform: translateY(20px); transition: transform 0.3s ease; width: 100%; max-width: 450px; position: relative; }\n.im-overlay.im-show .im-modal { transform: translateY(0); }\n.im-close { position: absolute; top: -12px; right: -12px; background: white; color: #0f172a; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; font-family: Arial; font-size: 16px; }\n`; 
-                let btnTextPopup = formConfig.ctaTextColorType === 'gradient' ? `<span style="background: linear-gradient(135deg, ${formConfig.ctaTextColor1}, ${formConfig.ctaTextColor2}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: transparent;">${formConfig.btnText}</span>` : `<span style="color: ${formConfig.ctaTextColor1 || '#ffffff'};">${formConfig.btnText}</span>`;
-                popupWrapperStart = `\n<!-- Trigger Popup -->\n<button class="im-trigger-btn" onclick="document.getElementById('im-overlay').classList.add('im-show')">${btnTextPopup}</button>\n<!-- Overlay -->\n<div id="im-overlay" class="im-overlay">\n    <div class="im-modal">\n        <button class="im-close" onclick="document.getElementById('im-overlay').classList.remove('im-show')">✕</button>\n`; 
+                popupStyles = `
+.im-trigger-btn { 
+    padding: 16px 32px; 
+    border-radius: 12px; 
+    font-weight: bold; 
+    color: white; 
+    border: none; 
+    cursor: pointer; 
+    font-size: 16px; 
+    background: ${formConfig.ctaBg}; 
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+}
+.im-overlay { 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(15,23,42,0.6); 
+    backdrop-filter: blur(4px); 
+    z-index: 99999; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    opacity: 0; 
+    pointer-events: none; 
+    transition: opacity 0.3s ease; 
+    padding: 16px; 
+}
+.im-overlay.im-show { 
+    opacity: 1; 
+    pointer-events: auto; 
+}
+.im-modal { 
+    transform: translateY(20px); 
+    transition: transform 0.3s ease; 
+    width: 100%; 
+    max-width: 450px; 
+    position: relative; 
+}
+.im-overlay.im-show .im-modal { 
+    transform: translateY(0); 
+}
+.im-close { 
+    position: absolute; 
+    top: -12px; 
+    right: -12px; 
+    background: white; 
+    color: #0f172a; 
+    width: 32px; 
+    height: 32px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: bold; 
+    cursor: pointer; 
+    border: none; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+    z-index: 10; 
+    font-family: Arial; 
+    font-size: 16px; 
+}
+`; 
+                let btnTextPopup = formConfig.btnText;
+                if (formConfig.ctaTextColorType === 'gradient') {
+                    btnTextPopup = `<span style="background: linear-gradient(135deg, ${formConfig.ctaTextColor1}, ${formConfig.ctaTextColor2}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: transparent;">${formConfig.btnText}</span>`;
+                } else {
+                    btnTextPopup = `<span style="color: ${formConfig.ctaTextColor1 || '#ffffff'};">${formConfig.btnText}</span>`;
+                }
+
+                popupWrapperStart = `
+<!-- Trigger Popup -->
+<button class="im-trigger-btn" onclick="document.getElementById('im-overlay').classList.add('im-show')">${btnTextPopup}</button>
+<!-- Overlay -->
+<div id="im-overlay" class="im-overlay">
+    <div class="im-modal">
+        <button class="im-close" onclick="document.getElementById('im-overlay').classList.remove('im-show')">✕</button>
+`; 
                 popupWrapperEnd = `    </div>\n</div>\n`; 
             }
             
             const cssCode = generateCSS().replace('</style>', `${popupStyles}\n</style>`); 
-            const isApi = globalSettings.waGateway === 'api'; let waLogicScript = isApi ? `btn.innerText = 'Terkirim ✓'; btn.style.background = '#10b981'; btn.style.color = '#fff';` : `window.location.href = waUrl;`;
+            const isApi = globalSettings.waGateway === 'api'; 
+            let waLogicScript = '';
             
-            let pixelHeadCode = ''; let pixelTrackCode = '';
+            if(isApi) { 
+                waLogicScript = `btn.innerText = 'Terkirim ✓'; btn.style.background = '#10b981'; btn.style.color = '#fff';`; 
+            } else { 
+                waLogicScript = `window.location.href = waUrl;`; 
+            }
+            
+            // PIXEL TRACKING CODES INJECTION
+            let pixelHeadCode = '';
+            let pixelTrackCode = '';
+
             if (formConfig.enablePixel) {
                 if (formConfig.fbPixel) {
                     pixelHeadCode += `\n<!-- Meta Pixel Code -->\n<script>\n!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');\nfbq('init', '${formConfig.fbPixel}');\nfbq('track', 'PageView');\n<\/script>\n`;
@@ -2007,25 +2457,136 @@
                 }
             }
             
-            let safeIntro = formConfig.waIntro.replace(/\n/g, '\\n').replace(/'/g, "\\'"); let safeFooter = formConfig.waFooter.replace(/\n/g, '\\n').replace(/'/g, "\\'");
+            let safeIntro = formConfig.waIntro.replace(/\n/g, '\\n').replace(/'/g, "\\'"); 
+            let safeFooter = formConfig.waFooter.replace(/\n/g, '\\n').replace(/'/g, "\\'");
             
             let calcLogic = `
 function calculateTotal() { 
-    let currentPrice = 0; let qty = 1; const formEl = document.getElementById('im-form'); if (!formEl) return 0;
+    let currentPrice = 0; 
+    let qty = 1; 
+    
+    const formEl = document.getElementById('im-form');
+    if (!formEl) return 0;
+    
     const fd = new FormData(formEl); 
-    for (let [key, value] of fd.entries()) { if(typeof value === 'string') { const match = value.match(/=\\s*(\\d+)/); if (match) { currentPrice = parseInt(match[1]); } } } 
+    
+    for (let [key, value] of fd.entries()) { 
+        if(typeof value === 'string') { 
+            const match = value.match(/=\\s*(\\d+)/); 
+            if (match) {
+                currentPrice = parseInt(match[1]); 
+            }
+        } 
+    } 
+    
     const numInputs = formEl.querySelectorAll('input[type="number"]'); 
-    if (numInputs.length > 0) { let parsedQty = parseInt(numInputs[0].value); qty = (!isNaN(parsedQty) && parsedQty > 0) ? parsedQty : 0; } 
+    
+    if (numInputs.length > 0) { 
+        let parsedQty = parseInt(numInputs[0].value); 
+        qty = (!isNaN(parsedQty) && parsedQty > 0) ? parsedQty : 0; 
+    } 
+    
     let total = currentPrice * qty; 
-    const totalBox = document.getElementById('im-total-box'); const totalVal = document.getElementById('im-total-value'); 
-    if (totalBox && totalVal) { if (currentPrice > 0) { totalBox.style.display = 'flex'; totalVal.innerText = 'Rp ' + new Intl.NumberFormat('id-ID').format(total); } else { totalBox.style.display = 'none'; } }
+    
+    const totalBox = document.getElementById('im-total-box'); 
+    const totalVal = document.getElementById('im-total-value'); 
+    
+    if (totalBox && totalVal) {
+        if (currentPrice > 0) { 
+            totalBox.style.display = 'flex'; 
+            totalVal.innerText = 'Rp ' + new Intl.NumberFormat('id-ID').format(total); 
+        } else { 
+            totalBox.style.display = 'none'; 
+        } 
+    }
+    
     return total; 
 } 
+
 document.getElementById('im-form').addEventListener('input', calculateTotal); 
 document.getElementById('im-form').addEventListener('change', calculateTotal); 
-calculateTotal();`;
+calculateTotal();
+            `;
             
-            const scriptString = `\n<script>\n${calcLogic}\n\ndocument.getElementById('im-form').addEventListener('submit', function(e) { \n    e.preventDefault(); \n    const btn = document.getElementById('im-submit-btn'); \n    btn.innerText = 'Memproses...'; btn.style.opacity = '0.7'; btn.style.pointerEvents = 'none'; \n    \n    const formData = new FormData(this); \n    let formObj = {}; \n    for (let [key, value] of formData.entries()) { if (formObj[key]) { formObj[key] += ', ' + value; } else { formObj[key] = value; } } \n    \n    let waText = '${safeIntro}\\n\\n*Form:* ${formConfig.title}\\n'; \n    let jsonData = { Waktu_Order: new Date().toLocaleString(), Nama_Form: '${formConfig.title}', wa_target: '${formConfig.waNumber}' }; \n    \n    for (let key in formObj) { waText += '*' + key + ':* ' + formObj[key] + '\\n'; jsonData[key] = formObj[key]; } \n    \n    let finalTotal = calculateTotal(); \n    if(finalTotal > 0) { waText += '\\n*Total Tagihan:* Rp ' + new Intl.NumberFormat('id-ID').format(finalTotal) + '\\n'; jsonData['Total_Tagihan'] = finalTotal; } \n    \n    waText += '\\n${safeFooter}'; jsonData.wa_text = waText; \n    \n    const rawWaTargets = '${formConfig.waNumber}';\n    const waNumbers = rawWaTargets.split(',').map(n => n.trim()).filter(n => n);\n    const selectedWa = waNumbers[Math.floor(Math.random() * waNumbers.length)] || waNumbers[0] || '';\n    const waUrl = 'https://wa.me/' + selectedWa + '?text=' + encodeURIComponent(waText); \n    const sheetUrl = '${globalSettings.sheetUrl}'; \n    \n    ${pixelTrackCode}\n    \n    if(sheetUrl && sheetUrl.startsWith('http')) { \n        fetch(sheetUrl, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(jsonData) }).then(() => { ${waLogicScript} }).catch(() => { ${waLogicScript} }); \n        setTimeout(() => { if(btn.innerText === 'Memproses...') { ${waLogicScript} } }, 3500); \n    } else { \n        ${waLogicScript} \n    } \n});\n<\/script>\n`;
+            const scriptString = `
+<script>
+${calcLogic}
+
+document.getElementById('im-form').addEventListener('submit', function(e) { 
+    e.preventDefault(); 
+    
+    const btn = document.getElementById('im-submit-btn'); 
+    btn.innerText = 'Memproses...'; 
+    btn.style.opacity = '0.7'; 
+    btn.style.pointerEvents = 'none'; 
+    
+    const formData = new FormData(this); 
+    let formObj = {}; 
+    
+    for (let [key, value] of formData.entries()) { 
+        if (formObj[key]) {
+            formObj[key] += ', ' + value; 
+        } else {
+            formObj[key] = value; 
+        }
+    } 
+    
+    let waText = '${safeIntro}\\n\\n*Form:* ${formConfig.title}\\n'; 
+    
+    let jsonData = { 
+        Waktu_Order: new Date().toLocaleString(), 
+        Nama_Form: '${formConfig.title}', 
+        wa_target: '${formConfig.waNumber}' 
+    }; 
+    
+    for (let key in formObj) { 
+        waText += '*' + key + ':* ' + formObj[key] + '\\n'; 
+        jsonData[key] = formObj[key]; 
+    } 
+    
+    let finalTotal = calculateTotal(); 
+    if(finalTotal > 0) { 
+        waText += '\\n*Total Tagihan:* Rp ' + new Intl.NumberFormat('id-ID').format(finalTotal) + '\\n'; 
+        jsonData['Total_Tagihan'] = finalTotal; 
+    } 
+    
+    waText += '\\n${safeFooter}'; 
+    jsonData.wa_text = waText; 
+    
+    // Logika Rotator / Multi-CS
+    const rawWaTargets = '${formConfig.waNumber}';
+    const waNumbers = rawWaTargets.split(',').map(n => n.trim()).filter(n => n);
+    const selectedWa = waNumbers[Math.floor(Math.random() * waNumbers.length)] || waNumbers[0] || '';
+    
+    const waUrl = 'https://wa.me/' + selectedWa + '?text=' + encodeURIComponent(waText); 
+    const sheetUrl = '${globalSettings.clientUrl}'; 
+    
+    // Tembak Tracking Pixel
+    ${pixelTrackCode}
+    
+    if(sheetUrl && sheetUrl.startsWith('http')) { 
+        fetch(sheetUrl, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(jsonData) 
+        }).then(() => { 
+            ${waLogicScript} 
+        }).catch(() => { 
+            ${waLogicScript} 
+        }); 
+        
+        setTimeout(() => { 
+            if(btn.innerText === 'Memproses...') { 
+                ${waLogicScript} 
+            } 
+        }, 3500); 
+    } else { 
+        ${waLogicScript} 
+    } 
+});
+<\/script>
+`;
             
             document.getElementById('output-code').value = `<!-- iMersFOW Start -->\n${pixelHeadCode}${cssCode}\n${popupWrapperStart}${rawFormHtml}${popupWrapperEnd}\n${scriptString}\n<!-- iMersFOW End -->`;
         }
@@ -2036,6 +2597,22 @@ calculateTotal();`;
             showToast('Kode HTML disalin ke clipboard!'); 
         }
 
+        // =========================================================================
+        // INITIALIZATION
+        // =========================================================================
+        window.onload = function() { 
+            // Pastikan UI muncul
+            document.getElementById('app-layout').classList.remove('hidden');
+            
+            // Panggil semua fungsi setup
+            loadGlobalSettings(); 
+            initTemplateEngine(); 
+            toggleTextColorMode('title');
+            toggleTextColorMode('cta_text');
+            
+            // Tampilkan Dashboard
+            switchTab('dashboard'); 
+        };
     </script>
 </body>
 </html>
