@@ -86,10 +86,9 @@
 <body class="antialiased h-screen flex flex-col">
 
     <!-- APP LAYOUT (SIDEBAR + MAIN CONTENT) -->
-    <!-- Tidak menggunakan hidden agar langsung tampil ke Dashboard -->
-    <div id="app-layout" class="flex-1 flex overflow-hidden bg-slate-50 relative w-full h-full">
+    <div id="app-layout" class="flex-1 flex overflow-hidden bg-slate-50 relative w-full h-full hidden">
         
-        <!-- Mobile Header (Visible only on small screens) -->
+        <!-- Mobile Header -->
         <div class="md:hidden absolute top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-40">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white shadow-md">
@@ -102,13 +101,10 @@
             </button>
         </div>
 
-        <!-- Sidebar Overlay (Mobile) -->
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden opacity-0 backdrop-blur-sm"></div>
 
         <!-- SIDEBAR -->
         <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-50 w-64 flex-shrink-0 bg-slate-900 text-slate-300 transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col shadow-2xl md:shadow-none border-r border-slate-800">
-            
-            <!-- Branding -->
             <div class="h-16 lg:h-20 flex items-center px-6 border-b border-slate-800">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white shadow-lg">
@@ -119,14 +115,10 @@
                         <p class="text-[9px] lg:text-[10px] text-slate-500 font-bold tracking-widest uppercase">Pro Edition</p>
                     </div>
                 </div>
-                <!-- Close btn mobile -->
                 <button onclick="toggleSidebar()" class="md:hidden ml-auto text-slate-400 hover:text-white"><i class="ph-bold ph-x text-xl"></i></button>
             </div>
 
-            <!-- Navigation Links -->
             <div class="flex-1 overflow-y-auto custom-scrollbar py-6 px-4 space-y-8">
-                
-                <!-- Group 1: Core -->
                 <div>
                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2">Core Tools</p>
                     <div class="space-y-1">
@@ -139,8 +131,6 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- Group 2: Automation -->
                 <div>
                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2">Automation</p>
                     <div class="space-y-1">
@@ -155,8 +145,6 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- Group 3: Help -->
                 <div>
                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2">Bantuan</p>
                     <div class="space-y-1">
@@ -167,7 +155,6 @@
                 </div>
             </div>
 
-            <!-- User Info -->
             <div class="p-4 border-t border-slate-800">
                 <div class="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
                     <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold uppercase text-xs" id="sidebar-avatar">M</div>
@@ -179,7 +166,7 @@
             </div>
         </aside>
 
-        <!-- MAIN CONTENT AREA -->
+        <!-- MAIN CONTENT -->
         <main id="main-container" class="flex-1 overflow-y-auto overflow-x-hidden pt-16 md:pt-0 relative custom-scrollbar bg-slate-50/50">
             <div class="w-full min-h-full p-4 sm:p-6 lg:p-8">
                 
@@ -187,7 +174,7 @@
                 <div id="view-dashboard" class="hidden animate-fade-in space-y-6 max-w-6xl mx-auto pb-10">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                         <div>
-                            <h1 class="text-2xl font-bold text-slate-900">Selamat Datang, <span id="welcome-name" class="text-rose-600">Master</span>!</h1>
+                            <h1 class="text-2xl font-bold text-slate-900">Selamat Datang, <span class="text-rose-600">Master</span>!</h1>
                             <p class="text-slate-500 text-sm mt-1">Ringkasan performa seluruh form Anda.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-3">
@@ -224,7 +211,7 @@
                                 <i class="ph-fill ph-trend-up text-3xl"></i>
                             </div>
                             <div>
-                                <p class="text-sm text-slate-500 font-semibold mb-1">Rata-rata Konversi</p>
+                                <p class="text-sm text-slate-500 font-semibold mb-1">Konversi Rata-rata</p>
                                 <h3 id="stat-conversion-rate" class="text-3xl font-bold text-slate-800 leading-none">0.0%</h3>
                             </div>
                         </div>
@@ -240,8 +227,8 @@
                                     <tr>
                                         <th class="px-6 py-4">Nama Form</th>
                                         <th class="px-6 py-4">Tanggal Buat</th>
-                                        <th class="px-6 py-4 text-center">Status</th>
-                                        <th class="px-6 py-4 text-center">Total Leads</th>
+                                        <th class="px-6 py-4 text-center">Statistik</th>
+                                        <th class="px-6 py-4 text-center">Total Leads & Konversi</th>
                                         <th class="px-6 py-4 text-right">Aksi</th>
                                     </tr>
                                 </thead>
@@ -258,13 +245,11 @@
                         <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
                             <i class="ph-fill ph-paper-plane-right text-emerald-500"></i> Auto Follow-Up (Sequence)
                         </h1>
-                        <p class="text-slate-500 text-sm mt-1">Buat pesan berantai otomatis yang terkirim di latar belakang via API Fonnte/WAPlus.</p>
+                        <p class="text-slate-500 text-sm mt-1">Buat pesan berantai otomatis yang terkirim di latar belakang via API Provider.</p>
                     </div>
 
                     <div class="flex flex-col lg:flex-row gap-6 flex-1 items-start">
-                        <!-- Panel Kiri: Pengaturan & Editor -->
                         <div class="flex-1 w-full min-w-0 flex flex-col gap-5">
-                            
                             <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Pilih Form Target</label>
                                 <select id="seq-form-target" onchange="renderSequenceVariables()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-500">
@@ -283,7 +268,6 @@
                                     </div>
                                 </div>
                                 <div class="space-y-3" id="sequence-timeline">
-                                    <!-- Di-render oleh Javascript -->
                                 </div>
                             </div>
 
@@ -336,7 +320,6 @@
                             </div>
                         </div>
 
-                        <!-- Panel Kanan: Live Preview WA -->
                         <div class="w-full lg:w-[380px] flex-shrink-0 bg-slate-100 rounded-3xl border border-slate-200 flex flex-col items-center p-6 lg:p-8 shadow-inner overflow-hidden relative sticky top-6">
                             <div class="flex items-center justify-center gap-2 mb-6 w-full">
                                 <span class="h-px flex-1 bg-slate-300"></span>
@@ -346,7 +329,6 @@
                                 <span class="h-px flex-1 bg-slate-300"></span>
                             </div>
 
-                            <!-- Phone Frame -->
                             <div class="w-[320px] bg-white rounded-[32px] shadow-2xl border-[8px] border-slate-800 overflow-hidden flex flex-col h-[550px] relative">
                                 <div class="absolute top-0 inset-x-0 h-5 bg-slate-800 rounded-b-xl w-32 mx-auto z-20"></div>
                                 <div class="bg-[#075e54] text-white p-3 pt-7 flex items-center gap-3 relative z-10 shadow-md">
@@ -379,7 +361,6 @@
                     </div>
 
                     <div class="max-w-3xl mx-auto">
-                        <!-- WhatsApp Gateway Settings (Full Width now) -->
                         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 lg:p-8">
                             <div class="flex items-center gap-4 mb-6">
                                 <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner border border-emerald-100">
@@ -419,7 +400,7 @@
                                         </div>
                                         <div>
                                             <span class="block text-sm font-bold text-slate-900 flex items-center gap-2">WhatsApp Official API <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold tracking-wider">PRO</span></span>
-                                            <span class="mt-1 block text-xs text-slate-500 leading-relaxed">Pesan terkirim otomatis di belakang layar tanpa membuka aplikasi WA. Mendukung Fonnte & WAPlus.</span>
+                                            <span class="mt-1 block text-xs text-slate-500 leading-relaxed">Pesan terkirim otomatis di belakang layar tanpa membuka aplikasi WA.</span>
                                         </div>
                                     </div>
                                 </label>
@@ -430,6 +411,8 @@
                                         <select id="api-provider" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 transition">
                                             <option value="fonnte">Fonnte API (fonnte.com)</option>
                                             <option value="waplus">WAPlus API (waplus.id)</option>
+                                            <option value="starsender">StarSender API (starsender.online)</option>
+                                            <option value="xsender">XSender API (xsender.id)</option>
                                         </select>
                                     </div>
                                     <div>
@@ -479,8 +462,8 @@
                                 <i class="ph-fill ph-youtube-logo text-white text-6xl opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all"></i>
                             </div>
                             <div class="p-6">
-                                <h3 class="text-lg font-bold text-slate-800 mb-2">2. Setting Fonnte & WAPlus API</h3>
-                                <p class="text-sm text-slate-600 mb-4">Cara mendapatkan API Key, mendaftarkan nomor sender (Device ID), dan melakukan testing pengiriman WA Background.</p>
+                                <h3 class="text-lg font-bold text-slate-800 mb-2">2. Setting Provider API WA</h3>
+                                <p class="text-sm text-slate-600 mb-4">Cara mendapatkan API Key, mendaftarkan nomor sender, dan test kirim WA otomatis via API.</p>
                                 <button class="text-blue-600 font-bold text-sm hover:underline flex items-center gap-1">Tonton Video <i class="ph-bold ph-arrow-right"></i></button>
                             </div>
                         </div>
@@ -489,7 +472,6 @@
 
                 <!-- VIEW: BUILDER FORM (STEP 1 - 4) -->
                 <div id="view-builder" class="hidden animate-fade-in max-w-7xl mx-auto w-full flex flex-col relative h-[80vh]">
-                    <!-- Navigasi Steps -->
                     <div class="mb-6 overflow-x-auto pb-2 flex-shrink-0">
                         <nav class="flex items-center justify-between min-w-[600px] w-full relative max-w-4xl mx-auto">
                             <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-200 z-0 rounded-full"></div>
@@ -516,7 +498,6 @@
 
                     <div class="relative w-full flex-1 bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden">
                         
-                        <!-- STEP 1: DESAIN -->
                         <div id="step-1" class="step-content absolute inset-0 p-6 lg:p-10 transition-transform duration-300 transform translate-x-0 overflow-y-auto custom-scrollbar pb-40">
                             <div class="max-w-3xl mx-auto space-y-8">
                                 <div>
@@ -592,7 +573,6 @@
                                             <i class="ph-fill ph-text-aa text-rose-500 text-lg"></i> Warna Teks Dinamis
                                         </h4>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <!-- Teks Judul Form -->
                                             <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
                                                 <label class="block text-sm font-bold text-slate-700 mb-3 border-b border-slate-100 pb-2">Teks Judul Form</label>
                                                 <div class="flex items-center gap-4 mb-4">
@@ -606,7 +586,6 @@
                                                 <div id="title-color-inputs" class="flex items-center gap-3"></div>
                                             </div>
                                             
-                                            <!-- Teks Tombol CTA -->
                                             <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
                                                 <label class="block text-sm font-bold text-slate-700 mb-3 border-b border-slate-100 pb-2">Teks Tombol CTA</label>
                                                 <div class="flex items-center gap-4 mb-4">
@@ -628,7 +607,6 @@
                                     </div>
                                 </div>
 
-                                <!-- TRACKING PIXEL SECTION -->
                                 <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 mt-6">
                                     <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
                                         <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -695,7 +673,6 @@
                             </div>
                         </div>
 
-                        <!-- STEP 2: SUSUN FIELD -->
                         <div id="step-2" class="step-content absolute inset-0 flex transition-transform duration-300 transform translate-x-full overflow-hidden bg-white">
                             <div class="w-72 bg-slate-50 border-r border-slate-200 flex flex-col h-full flex-shrink-0">
                                 <div class="p-4 border-b border-slate-200 bg-white">
@@ -779,7 +756,6 @@
                             </div>
                         </div>
 
-                        <!-- STEP 3: PREVIEW -->
                         <div id="step-3" class="step-content absolute inset-0 flex flex-col md:flex-row transition-transform duration-300 transform translate-x-full overflow-y-auto overflow-x-hidden md:overflow-hidden bg-white">
                             <div class="flex-1 p-6 lg:p-10 md:overflow-y-auto custom-scrollbar border-r border-slate-200 relative pb-40 md:pb-32 bg-slate-50/50">
                                 <div class="flex items-center justify-center gap-2 mb-8">
@@ -819,7 +795,6 @@
                             </div>
                         </div>
 
-                        <!-- STEP 4: EMBED -->
                         <div id="step-4" class="step-content absolute inset-0 p-6 lg:p-10 transition-transform duration-300 transform translate-x-full overflow-y-auto custom-scrollbar flex flex-col bg-white pb-40">
                             <div class="max-w-4xl mx-auto w-full flex-1 flex flex-col min-h-full">
                                 <div class="text-center mb-8">
@@ -858,7 +833,6 @@
         </main>
     </div>
 
-    <!-- MODAL TEMPLATE GALLERY -->
     <div id="template-modal" class="fixed inset-0 z-[10000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 invisible">
         <div class="modal-content bg-white w-full max-w-5xl h-[85vh] rounded-[24px] shadow-2xl flex flex-col overflow-hidden border border-slate-200">
             <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 flex-shrink-0">
@@ -873,30 +847,26 @@
             
             <div class="flex flex-1 overflow-hidden">
                 <div id="category-sidebar" class="w-56 bg-slate-50 border-r border-slate-200 p-4 flex flex-col gap-2 overflow-y-auto flex-shrink-0">
-                    <!-- Dinamis Category -->
-                </div>
+                    </div>
                 <div class="flex-1 bg-white p-6 overflow-y-auto custom-scrollbar">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="template-grid">
-                        <!-- Dinamis Template Cards -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- TOAST NOTIFICATION -->
     <div id="toast" class="toast flex items-center gap-2">
         <i class="ph-fill ph-info text-blue-400 text-lg"></i> 
         <span id="toast-msg">Pesan</span>
     </div>
 
-    <!-- SEMUA SCRIPT DAN LOGIKA -->
     <script>
         // =========================================================================
-        // URL DATABASE MASTER PUSAT & URL DEPLOY KLIEN LOKAL
+        // URL DEPLOY GOOGLE SHEETS (DITANAM PERMANEN)
         // =========================================================================
-        const MASTER_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1TqVfI7AzB1DGSBGcOapDWKU8TRWpInSgGsSiA7-lBdCVrhAC75UFCKxmcJ-l0xXSsQ/exec";
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc2oO2qpPr2XMuRqUH506gJ5-E9Cg8yKl2JQDu6tuv-l_xnfq8s5DRrG5o2kA9_3t4EA/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJtkwRKHXq5YH_S4tspuzz5B3N_FdOKy1bT6Ovqcqn8m9tPQufedB6M85fzW1jMOpZ/exec";
+        const MASTER_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzq_-n5t1NsrUSg9tCL7edTwB3fCZPYUDA-Vbu6J-Wfu9dXSwNu9yFxUeLOewd1bCvVfQ/exec";
 
         // =========================================================================
         // STATE GLOBAL & VARIABEL
@@ -940,13 +910,14 @@
 
         let formConfig = JSON.parse(JSON.stringify(defaultFormConfig)); 
         let formFields = [];
-        let savedForms = JSON.parse(localStorage.getItem('imersfow_forms')) || [];
-        let currentStep = 1; 
         
-        // VARIABEL TEMPLATE ENGINE HIBRIDA
-        let availableTemplates = {};           // Untuk Template Form
-        let availableSequenceTemplates = {};   // Untuk Template Sequence WA
-        let currentModalType = 'form';         // 'form' atau 'sequence'
+        // VARIABEL HIBRIDA UNTUK TEMPLATE FORM DAN SEQUENCE
+        let availableTemplates = {};
+        let availableSequenceTemplates = {};
+        let currentModalType = 'form';
+        
+        let currentStep = 1; 
+        let savedForms = JSON.parse(localStorage.getItem('imersfow_forms')) || [];
         let currentCategoryFilter = 'Semua';
 
         let sequencesData = [
@@ -981,130 +952,6 @@
             document.getElementById('toast-msg').innerText = msg;
             toast.classList.add('show'); 
             setTimeout(() => { toast.classList.remove('show'); }, 3000);
-        }
-
-        // =========================================================================
-        // COLOR HELPERS
-        // =========================================================================
-        function getThemeColor() {
-            const ctaBg = formConfig.ctaBg || '#3b82f6';
-            const match = ctaBg.match(/#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}/i);
-            return match ? match[0] : '#3b82f6';
-        }
-
-        function hexToRgb(hex) {
-            let c = hex.substring(1).split('');
-            if(c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
-            c = '0x' + c.join('');
-            return [(c>>16)&255, (c>>8)&255, c&255].join(', ');
-        }
-
-        function toggleColorMode(target) {
-            const type = document.querySelector(`input[name="${target}_type"]:checked`).value; 
-            const container = document.getElementById(`${target}-color-inputs`);
-            
-            if (type === 'solid') { 
-                container.innerHTML = `
-                    <div class="flex items-center gap-3 p-2 bg-slate-50 border border-slate-200 rounded-xl">
-                        <input type="color" id="${target}-c1" value="${target==='header'?'#1e3a8a':'#2563eb'}" oninput="buildColors('${target}')" class="w-10 h-10 p-0 border-0 rounded cursor-pointer">
-                        <span class="text-xs font-bold text-slate-500">Pilih Warna</span>
-                    </div>`; 
-            } else { 
-                container.innerHTML = `
-                    <div class="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl">
-                        <input type="color" id="${target}-c1" value="${target==='header'?'#0ea5e9':'#60a5fa'}" oninput="buildColors('${target}')" class="w-10 h-10 p-0 border-0 rounded cursor-pointer">
-                        <i class="ph-bold ph-arrow-right text-slate-400"></i>
-                        <input type="color" id="${target}-c2" value="${target==='header'?'#1e3a8a':'#2563eb'}" oninput="buildColors('${target}')" class="w-10 h-10 p-0 border-0 rounded cursor-pointer">
-                    </div>`; 
-            }
-            buildColors(target); 
-            if(currentStep === 1) renderCanvas();
-        }
-
-        function toggleTextColorMode(target) {
-            const radioName = target === 'title' ? 'title_color_type' : 'cta_text_type';
-            const checkedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
-            const type = checkedRadio ? checkedRadio.value : 'solid';
-            const container = document.getElementById(`${target}-color-inputs`);
-            
-            let c1Val = target === 'title' ? (formConfig.titleColor1 || '#ffffff') : (formConfig.ctaTextColor1 || '#ffffff');
-            let c2Val = target === 'title' ? (formConfig.titleColor2 || '#fef08a') : (formConfig.ctaTextColor2 || '#fef08a');
-
-            if (type === 'solid') { 
-                container.innerHTML = `
-                    <div class="flex items-center gap-3 p-2 bg-slate-50 border border-slate-200 rounded-xl">
-                        <input type="color" id="${target}-c1" value="${c1Val}" oninput="updateConfig()" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
-                        <span class="text-xs font-bold text-slate-500">Pilih Warna</span>
-                    </div>`; 
-            } else { 
-                container.innerHTML = `
-                    <div class="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl">
-                        <input type="color" id="${target}-c1" value="${c1Val}" oninput="updateConfig()" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
-                        <i class="ph-bold ph-arrow-right text-slate-400"></i>
-                        <input type="color" id="${target}-c2" value="${c2Val}" oninput="updateConfig()" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
-                    </div>`; 
-            }
-            updateConfig(); 
-        }
-
-        function buildColors(target) {
-            const type = document.querySelector(`input[name="${target}_type"]:checked`).value; 
-            let finalColor = '';
-            
-            if (type === 'solid') { 
-                finalColor = document.getElementById(`${target}-c1`).value; 
-            } else { 
-                finalColor = `linear-gradient(135deg, ${document.getElementById(`${target}-c1`).value}, ${document.getElementById(`${target}-c2`).value})`; 
-            }
-            
-            if(target === 'header') formConfig.headerBg = finalColor; 
-            if(target === 'cta') formConfig.ctaBg = finalColor;
-        }
-
-        function updateConfig() {
-            formConfig.title = document.getElementById('cfg-title').value; 
-            formConfig.waNumber = document.getElementById('cfg-wa').value;
-            formConfig.waIntro = document.getElementById('cfg-wa-intro').value; 
-            formConfig.waFooter = document.getElementById('cfg-wa-footer').value;
-            formConfig.btnText = document.getElementById('cfg-btn-text').value; 
-            formConfig.logoUrl = document.getElementById('cfg-logo').value;
-            formConfig.displayMode = document.querySelector('input[name="displayMode"]:checked').value;
-            formConfig.trustBadge = document.getElementById('cfg-trust-toggle').checked;
-            formConfig.trustTitle = document.getElementById('cfg-trust-title').value; 
-            formConfig.trustDesc = document.getElementById('cfg-trust-desc').value;
-            
-            const titleColorRadio = document.querySelector('input[name="title_color_type"]:checked');
-            if (titleColorRadio) formConfig.titleColorType = titleColorRadio.value;
-            if (document.getElementById('title-c1')) formConfig.titleColor1 = document.getElementById('title-c1').value;
-            if (document.getElementById('title-c2')) formConfig.titleColor2 = document.getElementById('title-c2').value;
-
-            const ctaTextColorRadio = document.querySelector('input[name="cta_text_type"]:checked');
-            if (ctaTextColorRadio) formConfig.ctaTextColorType = ctaTextColorRadio.value;
-            if (document.getElementById('cta_text-c1')) formConfig.ctaTextColor1 = document.getElementById('cta_text-c1').value;
-            if (document.getElementById('cta_text-c2')) formConfig.ctaTextColor2 = document.getElementById('cta_text-c2').value;
-
-            const trustInputs = document.getElementById('trust-inputs');
-            if(formConfig.trustBadge) { 
-                trustInputs.style.opacity = '1'; 
-                trustInputs.style.pointerEvents = 'auto'; 
-            } else { 
-                trustInputs.style.opacity = '0.5'; 
-                trustInputs.style.pointerEvents = 'none'; 
-            }
-            
-            formConfig.enablePixel = document.getElementById('cfg-pixel-toggle').checked;
-            formConfig.fbPixel = document.getElementById('cfg-pixel-fb').value;
-            formConfig.tiktokPixel = document.getElementById('cfg-pixel-tt').value;
-            formConfig.googlePixel = document.getElementById('cfg-pixel-gg').value;
-
-            const pixelInputs = document.getElementById('pixel-inputs');
-            if(formConfig.enablePixel) {
-                pixelInputs.classList.remove('hidden');
-            } else {
-                pixelInputs.classList.add('hidden');
-            }
-            
-            if(currentStep === 1) renderCanvas();
         }
 
         // =========================================================================
@@ -1231,22 +1078,25 @@
         }
 
         // =========================================================================
-        // DASHBOARD LOGIC
+        // DASHBOARD LOGIC (UPGRADED FOR VISITOR TRACKER)
         // =========================================================================
         function renderDashboard() {
             document.getElementById('stat-total-forms').innerText = savedForms.length;
             
             let totalLeads = 0; 
+            let totalViews = 0;
             savedForms.forEach(f => { 
                 totalLeads += (f.leads || 0); 
+                totalViews += (f.views || 0);
             });
             document.getElementById('stat-total-leads').innerText = totalLeads.toLocaleString();
             
             let conversionRateStr = "0.0%";
-            if(totalLeads > 0) {
-                let simulatedViews = totalLeads * (Math.floor(Math.random() * 5) + 3); 
-                let calcConv = (totalLeads / simulatedViews) * 100;
+            if(totalViews > 0) {
+                let calcConv = (totalLeads / totalViews) * 100;
                 conversionRateStr = calcConv.toFixed(1) + "%";
+            } else if (totalLeads > 0) {
+                conversionRateStr = "100.0%";
             }
             document.getElementById('stat-conversion-rate').innerText = conversionRateStr;
             
@@ -1259,16 +1109,27 @@
             }
             
             savedForms.forEach(form => {
+                let formLeads = form.leads || 0;
+                let formViews = form.views || 0;
+                let formConv = "0.0%";
+                if (formViews > 0) {
+                    formConv = ((formLeads / formViews) * 100).toFixed(1) + "%";
+                } else if (formLeads > 0) {
+                    formConv = "100.0%";
+                }
+                
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
                         <td class="px-6 py-4 font-bold text-slate-900">${form.title}</td>
                         <td class="px-6 py-4 text-slate-500 text-sm">${form.date}</td>
                         <td class="px-6 py-4 text-center">
-                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold inline-block">Aktif</span>
+                            <div class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-3 py-1 rounded-lg font-semibold text-xs border border-amber-100">
+                                <i class="ph-bold ph-eye"></i> ${formViews} Views
+                            </div>
                         </td>
                         <td class="px-6 py-4 text-center">
                             <div class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold text-sm border border-blue-100">
-                                <i class="ph-fill ph-users"></i> ${form.leads || 0}
+                                <i class="ph-fill ph-users"></i> ${formLeads} <span class="text-xs text-slate-400 font-normal">(${formConv})</span>
                             </div>
                         </td>
                         <td class="px-6 py-4 text-right">
@@ -1289,10 +1150,17 @@
             try {
                 const result = await fetchWithBackoff(SCRIPT_URL + "?action=sync_leads");
                 
-                if (result && result.status === 'success' && result.data) {
+                if (result && result.status === 'success') {
                     savedForms.forEach(f => {
-                        if (result.data[f.title] !== undefined) {
-                            f.leads = parseInt(result.data[f.title]) || 0;
+                        if (result.leads && result.leads[f.title] !== undefined) {
+                            f.leads = parseInt(result.leads[f.title]) || 0;
+                        } else {
+                            f.leads = 0;
+                        }
+                        if (result.views && result.views[f.title] !== undefined) {
+                            f.views = parseInt(result.views[f.title]) || 0;
+                        } else {
+                            f.views = 0;
                         }
                     });
                     localStorage.setItem('imersfow_forms', JSON.stringify(savedForms));
@@ -1327,6 +1195,7 @@
                 title: formConfig.title, 
                 date: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' }), 
                 leads: 0,
+                views: 0,
                 fields: JSON.parse(JSON.stringify(formFields)), 
                 config: JSON.parse(JSON.stringify(formConfig)),
                 hasCalc: hasCalculation
@@ -1336,6 +1205,147 @@
             localStorage.setItem('imersfow_forms', JSON.stringify(savedForms));
             showToast('Form berhasil disimpan & dipublish!');
             setTimeout(() => { switchTab('dashboard'); }, 1500);
+        }
+
+        // =========================================================================
+        // COLOR HELPERS
+        // =========================================================================
+        function getThemeColor() {
+            const ctaBg = formConfig.ctaBg || '#3b82f6';
+            const match = ctaBg.match(/#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}/i);
+            return match ? match[0] : '#3b82f6';
+        }
+
+        function hexToRgb(hex) {
+            let c = hex.substring(1).split('');
+            if(c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+            c = '0x' + c.join('');
+            return [(c>>16)&255, (c>>8)&255, c&255].join(', ');
+        }
+
+        function toggleColorMode(target) {
+            const type = document.querySelector(`input[name="${target}_type"]:checked`).value; 
+            const container = document.getElementById(`${target}-color-inputs`);
+            
+            if (type === 'solid') { 
+                container.innerHTML = `
+                    <div class="flex items-center gap-3 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                        <input type="color" id="${target}-c1" value="${target==='header'?'#1e3a8a':'#2563eb'}" oninput="buildColors('${target}')" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
+                        <span class="text-xs font-bold text-slate-500">Pilih Warna</span>
+                    </div>`; 
+            } else { 
+                container.innerHTML = `
+                    <div class="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                        <input type="color" id="${target}-c1" value="${target==='header'?'#0ea5e9':'#60a5fa'}" oninput="buildColors('${target}')" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
+                        <i class="ph-bold ph-arrow-right text-slate-400"></i>
+                        <input type="color" id="${target}-c2" value="${target==='header'?'#1e3a8a':'#2563eb'}" oninput="buildColors('${target}')" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
+                    </div>`; 
+            }
+            buildColors(target); 
+            if(currentStep === 1) renderCanvas();
+        }
+
+        function buildColors(target) {
+            const type = document.querySelector(`input[name="${target}_type"]:checked`).value; 
+            let finalColor = '';
+            
+            if (type === 'solid') { 
+                finalColor = document.getElementById(`${target}-c1`).value; 
+            } else { 
+                finalColor = `linear-gradient(135deg, ${document.getElementById(`${target}-c1`).value}, ${document.getElementById(`${target}-c2`).value})`; 
+            }
+            
+            if(target === 'header') formConfig.headerBg = finalColor; 
+            if(target === 'cta') formConfig.ctaBg = finalColor;
+            
+            if(currentStep === 1) renderCanvas();
+        }
+
+        function toggleTextColorMode(target) {
+            const radioName = target === 'title' ? 'title_color_type' : 'cta_text_type';
+            const checkedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
+            const type = checkedRadio ? checkedRadio.value : 'solid';
+            const container = document.getElementById(`${target}-color-inputs`);
+            
+            let c1Val = target === 'title' ? (formConfig.titleColor1 || '#ffffff') : (formConfig.ctaTextColor1 || '#ffffff');
+            let c2Val = target === 'title' ? (formConfig.titleColor2 || '#fef08a') : (formConfig.ctaTextColor2 || '#fef08a');
+
+            if (type === 'solid') { 
+                container.innerHTML = `
+                    <div class="flex items-center gap-3 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                        <input type="color" id="${target}-c1" value="${c1Val}" oninput="buildTextColors('${target}')" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
+                        <span class="text-xs font-bold text-slate-500">Pilih Warna</span>
+                    </div>`; 
+            } else { 
+                container.innerHTML = `
+                    <div class="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                        <input type="color" id="${target}-c1" value="${c1Val}" oninput="buildTextColors('${target}')" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
+                        <i class="ph-bold ph-arrow-right text-slate-400"></i>
+                        <input type="color" id="${target}-c2" value="${c2Val}" oninput="buildTextColors('${target}')" class="w-10 h-10 p-0 border-0 rounded cursor-pointer shadow-sm">
+                    </div>`; 
+            }
+            buildTextColors(target);
+        }
+
+        function buildTextColors(target) {
+            const radioName = target === 'title' ? 'title_color_type' : 'cta_text_type';
+            const checkedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
+            const type = checkedRadio ? checkedRadio.value : 'solid';
+            
+            if (target === 'title') {
+                formConfig.titleColorType = type;
+                const c1El = document.getElementById('title-c1');
+                const c2El = document.getElementById('title-c2');
+                if (c1El) formConfig.titleColor1 = c1El.value;
+                if (c2El) formConfig.titleColor2 = c2El.value;
+            } else if (target === 'cta_text') {
+                formConfig.ctaTextColorType = type;
+                const c1El = document.getElementById('cta_text-c1');
+                const c2El = document.getElementById('cta_text-c2');
+                if (c1El) formConfig.ctaTextColor1 = c1El.value;
+                if (c2El) formConfig.ctaTextColor2 = c2El.value;
+            }
+            
+            if(currentStep === 1) renderCanvas();
+        }
+
+        function updateConfig() {
+            formConfig.title = document.getElementById('cfg-title').value; 
+            formConfig.waNumber = document.getElementById('cfg-wa').value;
+            formConfig.waIntro = document.getElementById('cfg-wa-intro').value; 
+            formConfig.waFooter = document.getElementById('cfg-wa-footer').value;
+            formConfig.btnText = document.getElementById('cfg-btn-text').value; 
+            formConfig.logoUrl = document.getElementById('cfg-logo').value;
+            
+            const displayModeEl = document.querySelector('input[name="displayMode"]:checked');
+            if (displayModeEl) formConfig.displayMode = displayModeEl.value;
+            
+            formConfig.trustBadge = document.getElementById('cfg-trust-toggle').checked;
+            formConfig.trustTitle = document.getElementById('cfg-trust-title').value; 
+            formConfig.trustDesc = document.getElementById('cfg-trust-desc').value;
+            
+            const trustInputs = document.getElementById('trust-inputs');
+            if(formConfig.trustBadge) { 
+                trustInputs.style.opacity = '1'; 
+                trustInputs.style.pointerEvents = 'auto'; 
+            } else { 
+                trustInputs.style.opacity = '0.5'; 
+                trustInputs.style.pointerEvents = 'none'; 
+            }
+            
+            formConfig.enablePixel = document.getElementById('cfg-pixel-toggle').checked;
+            formConfig.fbPixel = document.getElementById('cfg-pixel-fb').value;
+            formConfig.tiktokPixel = document.getElementById('cfg-pixel-tt').value;
+            formConfig.googlePixel = document.getElementById('cfg-pixel-gg').value;
+
+            const pixelInputs = document.getElementById('pixel-inputs');
+            if(formConfig.enablePixel) {
+                pixelInputs.classList.remove('hidden');
+            } else {
+                pixelInputs.classList.add('hidden');
+            }
+            
+            if(currentStep === 1) renderCanvas();
         }
 
         // =========================================================================
@@ -1565,19 +1575,18 @@
             grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-500"><i class="ph-bold ph-spinner animate-spin text-3xl mb-3 text-blue-500"></i><p>Menarik data template dari server...</p></div>';
             
             try {
-                // Tarik Template Form dari MASTER_SCRIPT_URL (Sheets pusat lu yang terjamin ada isinya)
+                // Tarik Template Form dari URL MASTER
                 const resultForm = await fetchWithBackoff(MASTER_SCRIPT_URL + "?action=get_templates");
                 if(resultForm && resultForm.status === 'success') {
                     availableTemplates = resultForm.data;
                 }
                 
-                // Tarik Template Sequence dari MASTER_SCRIPT_URL
+                // Tarik Template Sequence dari URL MASTER
                 const resultSeq = await fetchWithBackoff(MASTER_SCRIPT_URL + "?action=get_sequence_templates");
                 if(resultSeq && resultSeq.status === 'success') {
                     availableSequenceTemplates = resultSeq.data;
                 }
                 
-                // Kondisi Awal Form (Background Rendering)
                 if(Object.keys(availableTemplates).length > 0) {
                     renderCategorySidebar();
                     filterTemplates('Semua');
@@ -1756,14 +1765,18 @@
             if(key === 'blank') {
                 formConfig = JSON.parse(JSON.stringify(defaultFormConfig));
                 formFields = JSON.parse(JSON.stringify(defaultFormFields));
-                document.querySelector('input[name="header_type"][value="solid"]').checked = true;
-                document.querySelector('input[name="cta_type"][value="solid"]').checked = true;
+                const solidHeader = document.querySelector('input[name="header_type"][value="solid"]');
+                if (solidHeader) solidHeader.checked = true;
+                const solidCta = document.querySelector('input[name="cta_type"][value="solid"]');
+                if (solidCta) solidCta.checked = true;
             } else {
                 const tpl = availableTemplates[key];
                 formConfig = JSON.parse(JSON.stringify(tpl.config));
                 formFields = JSON.parse(JSON.stringify(tpl.fields));
-                document.querySelector('input[name="header_type"][value="gradient"]').checked = true;
-                document.querySelector('input[name="cta_type"][value="gradient"]').checked = true;
+                const gradientHeader = document.querySelector('input[name="header_type"][value="gradient"]');
+                if (gradientHeader) gradientHeader.checked = true;
+                const gradientCta = document.querySelector('input[name="cta_type"][value="gradient"]');
+                if (gradientCta) gradientCta.checked = true;
             }
 
             formConfig.titleColorType = formConfig.titleColorType || 'solid';
@@ -1784,26 +1797,47 @@
             document.getElementById('cfg-btn-text').value = formConfig.btnText; 
             document.getElementById('cfg-logo').value = formConfig.logoUrl;
             
-            document.querySelector(`input[name="displayMode"][value="${formConfig.displayMode}"]`).checked = true;
+            const displayModeRadio = document.querySelector(`input[name="displayMode"][value="${formConfig.displayMode}"]`);
+            if (displayModeRadio) displayModeRadio.checked = true;
             
             document.getElementById('cfg-trust-toggle').checked = formConfig.trustBadge; 
             document.getElementById('cfg-trust-title').value = formConfig.trustTitle; 
             document.getElementById('cfg-trust-desc').value = formConfig.trustDesc;
             
-            document.querySelector(`input[name="title_color_type"][value="${formConfig.titleColorType}"]`).checked = true;
-            document.querySelector(`input[name="cta_text_type"][value="${formConfig.ctaTextColorType}"]`).checked = true;
+            const titleColorRadio = document.querySelector(`input[name="title_color_type"][value="${formConfig.titleColorType}"]`);
+            if (titleColorRadio) titleColorRadio.checked = true;
+            
+            const ctaTextRadio = document.querySelector(`input[name="cta_text_type"][value="${formConfig.ctaTextColorType}"]`);
+            if (ctaTextRadio) ctaTextRadio.checked = true;
             
             document.getElementById('cfg-pixel-toggle').checked = formConfig.enablePixel;
             document.getElementById('cfg-pixel-fb').value = formConfig.fbPixel;
             document.getElementById('cfg-pixel-tt').value = formConfig.tiktokPixel;
             document.getElementById('cfg-pixel-gg').value = formConfig.googlePixel;
 
+            // Trigger rendering of color inputs directly (which will then call buildColors/buildTextColors but without calling updateConfig again)
             toggleColorMode('header'); 
             toggleColorMode('cta'); 
             toggleTextColorMode('title');
             toggleTextColorMode('cta_text');
 
-            updateConfig();
+            // Set visibility of elements based on config
+            const trustInputs = document.getElementById('trust-inputs');
+            if (formConfig.trustBadge) { 
+                trustInputs.style.opacity = '1'; 
+                trustInputs.style.pointerEvents = 'auto'; 
+            } else { 
+                trustInputs.style.opacity = '0.5'; 
+                trustInputs.style.pointerEvents = 'none'; 
+            }
+            
+            const pixelInputs = document.getElementById('pixel-inputs');
+            if (formConfig.enablePixel) {
+                pixelInputs.classList.remove('hidden');
+            } else {
+                pixelInputs.classList.add('hidden');
+            }
+
             switchTab('builder'); 
             goToStep(1);
         }
@@ -2507,6 +2541,17 @@ calculateTotal();
             const scriptString = `
 <script>
 ${calcLogic}
+
+// Track Form View on Load (NEW VISITOR TRACKER SCRIPT INJECTION)
+(function() {
+    const sheetUrl = '${SCRIPT_URL}';
+    if(sheetUrl && sheetUrl.startsWith('http')) {
+        fetch(sheetUrl + "?action=track_view&form_name=" + encodeURIComponent('${formConfig.title}'), {
+            method: 'GET',
+            mode: 'no-cors'
+        });
+    }
+})();
 
 document.getElementById('im-form').addEventListener('submit', function(e) { 
     e.preventDefault(); 
